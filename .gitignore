@@ -1,0 +1,30 @@
+# Node / pnpm
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+
+# Test / coverage
+coverage/
+.vitest/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Design kit working files (keep sources, drop editor cruft)
+docs/design/.thumbnail/

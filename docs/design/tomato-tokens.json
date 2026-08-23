@@ -1,0 +1,201 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "$description": "Tomato — agentic Pomodoro. W3C DTCG design tokens, Style-Dictionary compatible. Color group carries light + dark modes; other groups are mode-agnostic.",
+
+  "color": {
+    "$type": "color",
+    "light": {
+      "brand": {
+        "tomato":      { "$value": "#e04a2f" },
+        "tomato-deep": { "$value": "#bf3a22" },
+        "leaf":        { "$value": "#5c8a3c" }
+      },
+      "neutral": {
+        "bg":       { "$value": "#f7f3ee" },
+        "surface":  { "$value": "#fffdfb" },
+        "surface-2":{ "$value": "#f0eae2" },
+        "border":   { "$value": "#e6ddd2" },
+        "text-muted": { "$value": "#7a6e64" },
+        "text":     { "$value": "#26201c" }
+      },
+      "state": {
+        "focus":   { "$value": "#128a7a", "$description": "normal sprint · glyph ●" },
+        "grace":   { "$value": "#c98420", "$description": "wrap-up window · glyph ◑" },
+        "break":   { "$value": "#4a6bcc", "$description": "rest · glyph ◼" },
+        "overrun": { "$value": "#cf3b30", "$description": "past the limit · glyph ▲" }
+      },
+      "status": {
+        "success": { "$value": "#2f9256" },
+        "warning": { "$value": "#c98420" },
+        "danger":  { "$value": "#cf3b30" },
+        "info":    { "$value": "#3f79cf" }
+      },
+      "chart": {
+        "1": { "$value": "#128a7a" },
+        "2": { "$value": "#c98420" },
+        "3": { "$value": "#4a6bcc" },
+        "4": { "$value": "#9c4fb0" },
+        "5": { "$value": "#8a7d70" }
+      }
+    },
+    "dark": {
+      "brand": {
+        "tomato":      { "$value": "#f0603f" },
+        "tomato-deep": { "$value": "#d24a2c" },
+        "leaf":        { "$value": "#7bab55" }
+      },
+      "neutral": {
+        "bg":       { "$value": "#171310" },
+        "surface":  { "$value": "#201b17" },
+        "surface-2":{ "$value": "#2a241f" },
+        "border":   { "$value": "#39312a" },
+        "text-muted": { "$value": "#a89b8f" },
+        "text":     { "$value": "#f2ebe2" }
+      },
+      "state": {
+        "focus":   { "$value": "#2bb6a2", "$description": "normal sprint · glyph ●" },
+        "grace":   { "$value": "#e5a23e", "$description": "wrap-up window · glyph ◑" },
+        "break":   { "$value": "#7a95e6", "$description": "rest · glyph ◼" },
+        "overrun": { "$value": "#eb5a4d", "$description": "past the limit · glyph ▲" }
+      },
+      "status": {
+        "success": { "$value": "#4cc07d" },
+        "warning": { "$value": "#e5a23e" },
+        "danger":  { "$value": "#eb5a4d" },
+        "info":    { "$value": "#6fa0ee" }
+      },
+      "chart": {
+        "1": { "$value": "#2bb6a2" },
+        "2": { "$value": "#e5a23e" },
+        "3": { "$value": "#7a95e6" },
+        "4": { "$value": "#c07fd4" },
+        "5": { "$value": "#a99a8c" }
+      }
+    }
+  },
+
+  "ring": {
+    "$description": "Runtime-drawn tray ring. Draw on canvas 16/22/24/32px (+@2x). Start -90deg (12 o'clock), clockwise fill, round cap.",
+    "diameter-ratio":    { "$type": "number", "$value": 0.84, "$description": "ring diameter / canvas size" },
+    "stroke-ratio":      { "$type": "number", "$value": 0.15, "$description": "stroke width / ring diameter" },
+    "inner-gap-px":      { "$type": "dimension", "$value": "2px" },
+    "start-angle-deg":   { "$type": "number", "$value": -90 },
+    "clockwise":         { "$type": "boolean", "$value": true },
+    "cap":               { "$type": "string", "$value": "round" },
+    "track": {
+      "$type": "color",
+      "light": { "$value": "{color.light.neutral.border}" },
+      "dark":  { "$value": "{color.dark.neutral.border}" }
+    },
+    "progress-focus": {
+      "$type": "color",
+      "light": { "$value": "{color.light.state.focus}" },
+      "dark":  { "$value": "{color.dark.state.focus}" }
+    },
+    "progress-grace": {
+      "$type": "color",
+      "light": { "$value": "{color.light.state.grace}" },
+      "dark":  { "$value": "{color.dark.state.grace}" }
+    },
+    "progress-overrun": {
+      "$type": "color",
+      "light": { "$value": "{color.light.state.overrun}" },
+      "dark":  { "$value": "{color.dark.state.overrun}" }
+    }
+  },
+
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "display": { "$value": ["Hanken Grotesk", "system-ui", "sans-serif"] },
+      "body":    { "$value": ["Hanken Grotesk", "system-ui", "sans-serif"] },
+      "mono":    { "$value": ["IBM Plex Mono", "ui-monospace", "monospace"] }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular":  { "$value": 400 },
+      "medium":   { "$value": 500 },
+      "semibold": { "$value": 600 },
+      "bold":     { "$value": 700 },
+      "extrabold":{ "$value": 800 }
+    },
+    "size": {
+      "$type": "dimension",
+      "caption": { "$value": "11px" },
+      "small":   { "$value": "13px" },
+      "body":    { "$value": "15px" },
+      "label":   { "$value": "17px" },
+      "title":   { "$value": "22px" },
+      "display": { "$value": "40px" },
+      "timer":   { "$value": "46px" }
+    },
+    "line-height": {
+      "$type": "number",
+      "tight": { "$value": 1.05 },
+      "snug":  { "$value": 1.2 },
+      "normal":{ "$value": 1.5 },
+      "loose": { "$value": 1.6 }
+    }
+  },
+
+  "space": {
+    "$type": "dimension",
+    "0": { "$value": "0px" },
+    "1": { "$value": "4px" },
+    "2": { "$value": "8px" },
+    "3": { "$value": "12px" },
+    "4": { "$value": "16px" },
+    "5": { "$value": "22px" },
+    "6": { "$value": "30px" },
+    "7": { "$value": "44px" }
+  },
+
+  "radius": {
+    "$type": "dimension",
+    "sm":   { "$value": "8px" },
+    "md":   { "$value": "12px" },
+    "lg":   { "$value": "16px" },
+    "pill": { "$value": "999px" }
+  },
+
+  "border": {
+    "$type": "dimension",
+    "hairline": { "$value": "1px" },
+    "thick":    { "$value": "2px" }
+  },
+
+  "shadow": {
+    "$type": "shadow",
+    "light": {
+      "card": { "$value": "0 1px 3px rgba(40,30,20,.08), 0 12px 30px rgba(40,30,20,.10)" }
+    },
+    "dark": {
+      "card": { "$value": "0 1px 3px rgba(0,0,0,.4), 0 14px 34px rgba(0,0,0,.40)" }
+    }
+  },
+
+  "opacity": {
+    "$type": "number",
+    "track":    { "$value": 0.28, "$description": "over-run track tint" },
+    "muted":    { "$value": 0.6 },
+    "disabled": { "$value": 0.4 }
+  },
+
+  "duration": {
+    "$type": "duration",
+    "state-crossfade": { "$value": "240ms", "$description": "ring state color change" },
+    "toast-in":        { "$value": "200ms" },
+    "card-in":         { "$value": "180ms" }
+  },
+
+  "easing": {
+    "$type": "cubicBezier",
+    "standard": { "$value": [0.2, 0.0, 0.0, 1.0] },
+    "out":      { "$value": [0.0, 0.0, 0.2, 1.0] }
+  },
+
+  "icon": {
+    "stroke-width": { "$type": "dimension", "$value": "2px" },
+    "grid-unit":    { "$type": "dimension", "$value": "24px" }
+  }
+}

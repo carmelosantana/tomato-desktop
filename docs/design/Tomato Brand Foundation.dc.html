@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+a{color:var(--tomato);text-decoration:none}
+a:hover{color:var(--tomato-deep)}
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="--bg:#f7f3ee;--surface:#fffdfb;--surface2:#f0eae2;--border:#e6ddd2;--muted:#7a6e64;--text:#26201c;--tomato:#e04a2f;--tomato-deep:#bf3a22;--leaf:#5c8a3c;--focus:#128a7a;--grace:#c98420;--brk:#4a6bcc;--overrun:#cf3b30;--success:#2f9256;--warning:#c98420;--danger:#cf3b30;--info:#3f79cf;--shadow:0 1px 3px rgba(40,30,20,.08),0 10px 28px rgba(40,30,20,.06);--c1:#128a7a;--c2:#c98420;--c3:#4a6bcc;--c4:#9c4fb0;--c5:#8a7d70;font-family:'Hanken Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:44px 48px 64px;transition:background .3s ease,color .3s ease">
+
+<div style="max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px">
+
+<!-- Header -->
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+<div style="display:flex;align-items:center;gap:16px">
+<svg width="46" height="46" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="37" r="20" fill="var(--tomato)"/><ellipse cx="25" cy="30" rx="6" ry="4" fill="#ffffff" opacity="0.22"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="var(--leaf)"/></svg>
+<div>
+<div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1">Tomato</div>
+<div style="font-size:13px;color:var(--muted);margin-top:4px">Agentic Pomodoro · brand foundation</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+<button onClick="{{ toggle }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:8px 16px;cursor:pointer;box-shadow:var(--shadow)">◑ Toggle theme</button>
+<div style="font-size:13px;color:var(--muted);max-width:300px;text-align:right;line-height:1.5">Focus without guilt; stop without loss.</div>
+</div>
+</div>
+
+<!-- The mark -->
+<section style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;box-shadow:var(--shadow)">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:20px">01 — The mark</div>
+<div style="display:flex;gap:26px;flex-wrap:wrap;align-items:stretch">
+
+<!-- Fuller -->
+<div style="flex:1;min-width:250px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:14px;align-items:center">
+<svg width="130" height="130" viewBox="0 0 64 64"><circle cx="32" cy="37" r="20" fill="var(--tomato)"/><ellipse cx="25" cy="30" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.22"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="var(--leaf)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:15px">Fuller fruit</div><div style="font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5">App icon &amp; about. Warm, expressive, a little playful.</div></div>
+</div>
+
+<!-- Hybrid -->
+<div style="flex:1;min-width:250px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:14px;align-items:center">
+<svg width="130" height="130" viewBox="0 0 120 120"><circle cx="60" cy="66" r="42" fill="none" stroke="var(--border)" stroke-width="11"/><circle cx="60" cy="66" r="42" fill="none" stroke="var(--tomato)" stroke-width="11" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 66)"/><line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round"/><circle cx="60" cy="24" r="8" fill="var(--leaf)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:15px">Hybrid — ring as fruit</div><div style="font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5">The progress ring <em>is</em> the tomato; the calyx sits at 12 o'clock.</div></div>
+</div>
+
+<!-- Tiny / mono tests -->
+<div style="flex:1.1;min-width:270px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:16px">
+<div style="font-weight:700;font-size:15px">Survives tiny &amp; monochrome</div>
+<div style="display:flex;align-items:flex-end;gap:18px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)"><svg width="16" height="16" viewBox="0 0 64 64"><circle cx="32" cy="37" r="20" fill="currentColor"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="currentColor"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">16</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)"><svg width="22" height="22" viewBox="0 0 64 64"><circle cx="32" cy="37" r="20" fill="currentColor"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="currentColor"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">22</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)"><svg width="24" height="24" viewBox="0 0 64 64"><circle cx="32" cy="37" r="20" fill="currentColor"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="currentColor"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">24</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)"><svg width="32" height="32" viewBox="0 0 64 64"><circle cx="32" cy="37" r="20" fill="currentColor"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="currentColor"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">32</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;background:#1a1613;border-radius:8px;padding:8px"><svg width="24" height="24" viewBox="0 0 64 64"><circle cx="32" cy="37" r="20" fill="#f2ebe2"/><polygon points="32,5 34.1,11.1 40.6,11.2 35.4,15.1 37.3,21.3 32,17.6 26.7,21.3 28.6,15.1 23.4,11.2 29.9,11.1" fill="#f2ebe2"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#a89b8f">tmpl</span></div>
+</div>
+<div style="font-size:12.5px;color:var(--muted);line-height:1.55">Silhouette-first: one filled body + a 5-point calyx. Reads as a single glyph at 16px; macOS uses the single-color template, Linux the color mark.</div>
+</div>
+</div>
+</section>
+
+<!-- Ring hero -->
+<section style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;box-shadow:var(--shadow)">
+<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:22px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">02 — Menu-bar ring · the hero asset</div>
+<div style="font-size:13px;color:var(--muted)">Drawn live, all day. State by hue <em>and</em> shape — never color alone.</div>
+</div>
+
+<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:space-between">
+
+<!-- idle -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;min-width:120px">
+<svg width="96" height="96" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12"/><circle cx="60" cy="8" r="4.5" fill="var(--muted)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:13.5px">Idle</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">— · at rest</div></div>
+</div>
+<!-- focus early -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;min-width:120px">
+<svg width="96" height="96" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--focus)" stroke-width="12" stroke-linecap="round" stroke-dasharray="42 285" transform="rotate(-90 60 60)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:13.5px;color:var(--focus)">● Focus · early</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">13:12 left</div></div>
+</div>
+<!-- focus late -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;min-width:120px">
+<svg width="96" height="96" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--focus)" stroke-width="12" stroke-linecap="round" stroke-dasharray="268 59" transform="rotate(-90 60 60)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:13.5px;color:var(--focus)">● Focus · late</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">2:40 left</div></div>
+</div>
+<!-- grace -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;min-width:120px">
+<svg width="96" height="96" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--grace)" stroke-width="12" stroke-linecap="round" stroke-dasharray="327 0" transform="rotate(-90 60 60)"/><polygon points="60,42 63,51 72,51 65,57 68,66 60,60.5 52,66 55,57 48,51 57,51" fill="var(--grace)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:13.5px;color:var(--grace)">◑ Grace · wrap up</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">break in 2:00</div></div>
+</div>
+<!-- break -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;min-width:120px">
+<svg width="96" height="96" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="12" stroke-dasharray="3 9" stroke-linecap="round"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--brk)" stroke-width="12" stroke-linecap="round" stroke-dasharray="131 196" transform="rotate(-90 60 60)"/><rect x="52" y="52" width="16" height="16" rx="3" fill="var(--brk)"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:13.5px;color:var(--brk)">◼ Break</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">3:48 rest</div></div>
+</div>
+<!-- overrun -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;min-width:120px">
+<svg width="96" height="96" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--overrun)" stroke-width="12" opacity="0.28"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--overrun)" stroke-width="12" stroke-linecap="round" stroke-dasharray="327 0" transform="rotate(-90 60 60)"/><path d="M60 46 L70 64 L50 64 Z" fill="var(--overrun)"/><rect x="58.5" y="52" width="3" height="7" rx="1.5" fill="#fff"/><rect x="58.5" y="60.5" width="3" height="3" rx="1.5" fill="#fff"/></svg>
+<div style="text-align:center"><div style="font-weight:700;font-size:13.5px;color:var(--overrun)">▲ Over-run</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">+1:24 past</div></div>
+</div>
+</div>
+
+<!-- geometry spec -->
+<div style="margin-top:26px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px 22px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Geometry spec — draw programmatically</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 26px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.5">
+<div><span style="color:var(--muted)">diameter</span> = 84% of canvas</div>
+<div><span style="color:var(--muted)">stroke</span> = 15% of diameter</div>
+<div><span style="color:var(--muted)">start</span> = −90° (12 o'clock)</div>
+<div><span style="color:var(--muted)">direction</span> = clockwise fill</div>
+<div><span style="color:var(--muted)">cap</span> = round</div>
+<div><span style="color:var(--muted)">inner gap</span> = 2px</div>
+<div><span style="color:var(--muted)">track</span> = --border (α ≈ 0.9)</div>
+<div><span style="color:var(--muted)">canvas</span> = 16 / 22 / 24 / 32 · @2x</div>
+<div><span style="color:var(--muted)">macOS</span> = mono template + α</div>
+<div><span style="color:var(--muted)">Linux</span> = color variant</div>
+</div>
+</div>
+</section>
+
+<!-- Palette -->
+<section style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;box-shadow:var(--shadow)">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:20px">03 — Palette · light &amp; dark, one set of tokens</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+
+<!-- brand -->
+<div>
+<div style="font-weight:700;font-size:14px;margin-bottom:10px">Brand</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:140px;height:78px;border-radius:12px;background:var(--tomato);border:1px solid var(--border);display:flex;align-items:flex-end;padding:10px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px">--tomato</div>
+<div style="flex:1;min-width:140px;height:78px;border-radius:12px;background:var(--tomato-deep);border:1px solid var(--border);display:flex;align-items:flex-end;padding:10px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px">--tomato-deep</div>
+<div style="flex:1;min-width:140px;height:78px;border-radius:12px;background:var(--leaf);border:1px solid var(--border);display:flex;align-items:flex-end;padding:10px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px">--leaf</div>
+</div>
+</div>
+
+<!-- neutrals -->
+<div>
+<div style="font-weight:700;font-size:14px;margin-bottom:10px">Neutrals — warm-toned</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:120px;height:66px;border-radius:12px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:flex-end;padding:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px">--bg</div>
+<div style="flex:1;min-width:120px;height:66px;border-radius:12px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:flex-end;padding:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px">--surface</div>
+<div style="flex:1;min-width:120px;height:66px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:flex-end;padding:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px">--surface2</div>
+<div style="flex:1;min-width:120px;height:66px;border-radius:12px;background:var(--border);border:1px solid var(--border);display:flex;align-items:flex-end;padding:9px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px">--border</div>
+<div style="flex:1;min-width:120px;height:66px;border-radius:12px;background:var(--muted);border:1px solid var(--border);display:flex;align-items:flex-end;padding:9px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px">--muted</div>
+<div style="flex:1;min-width:120px;height:66px;border-radius:12px;background:var(--text);border:1px solid var(--border);display:flex;align-items:flex-end;padding:9px;color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px">--text</div>
+</div>
+</div>
+
+<!-- states -->
+<div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">Semantic states — hue + shape, color-blind-safe</div>
+<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Each state always pairs its color with a glyph so meaning never rests on hue.</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:150px;height:82px;border-radius:12px;background:var(--focus);display:flex;flex-direction:column;justify-content:space-between;padding:11px;color:#fff"><span style="font-size:16px;font-weight:700">● Focus</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.85">--focus · normal</span></div>
+<div style="flex:1;min-width:150px;height:82px;border-radius:12px;background:var(--grace);display:flex;flex-direction:column;justify-content:space-between;padding:11px;color:#fff"><span style="font-size:16px;font-weight:700">◑ Grace</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.9">--grace · wrap-up</span></div>
+<div style="flex:1;min-width:150px;height:82px;border-radius:12px;background:var(--brk);display:flex;flex-direction:column;justify-content:space-between;padding:11px;color:#fff"><span style="font-size:16px;font-weight:700">◼ Break</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.9">--break · rest</span></div>
+<div style="flex:1;min-width:150px;height:82px;border-radius:12px;background:var(--overrun);display:flex;flex-direction:column;justify-content:space-between;padding:11px;color:#fff"><span style="font-size:16px;font-weight:700">▲ Over-run</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.9">--overrun · past limit</span></div>
+</div>
+</div>
+
+<!-- status + chart -->
+<div style="display:flex;gap:22px;flex-wrap:wrap">
+<div style="flex:1;min-width:260px">
+<div style="font-weight:700;font-size:14px;margin-bottom:10px">Status</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<div style="flex:1;min-width:90px;height:54px;border-radius:10px;background:var(--success);display:flex;align-items:flex-end;padding:8px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px">success</div>
+<div style="flex:1;min-width:90px;height:54px;border-radius:10px;background:var(--warning);display:flex;align-items:flex-end;padding:8px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px">warning</div>
+<div style="flex:1;min-width:90px;height:54px;border-radius:10px;background:var(--danger);display:flex;align-items:flex-end;padding:8px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px">danger</div>
+<div style="flex:1;min-width:90px;height:54px;border-radius:10px;background:var(--info);display:flex;align-items:flex-end;padding:8px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px">info</div>
+</div>
+</div>
+<div style="flex:1;min-width:260px">
+<div style="font-weight:700;font-size:14px;margin-bottom:10px">Chart — categorical, cb-safe</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<div style="flex:1;min-width:64px;height:54px;border-radius:10px;background:var(--c1);border:1px solid var(--border)"></div>
+<div style="flex:1;min-width:64px;height:54px;border-radius:10px;background:var(--c2);border:1px solid var(--border)"></div>
+<div style="flex:1;min-width:64px;height:54px;border-radius:10px;background:var(--c3);border:1px solid var(--border)"></div>
+<div style="flex:1;min-width:64px;height:54px;border-radius:10px;background:var(--c4);border:1px solid var(--border)"></div>
+<div style="flex:1;min-width:64px;height:54px;border-radius:10px;background:var(--c5);border:1px solid var(--border)"></div>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+
+<!-- Typography -->
+<section style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;box-shadow:var(--shadow)">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:20px">04 — Typography</div>
+<div style="display:flex;gap:30px;flex-wrap:wrap">
+<div style="flex:1.4;min-width:300px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:8px">Display / UI — Hanken Grotesk</div>
+<div style="font-size:40px;font-weight:800;letter-spacing:-0.025em;line-height:1.05">Focus without guilt.</div>
+<div style="font-size:22px;font-weight:600;margin-top:12px;color:var(--text)">Stop without loss.</div>
+<div style="font-size:15px;line-height:1.6;color:var(--muted);margin-top:12px;max-width:440px">A calm menu-bar timer for people who work alongside AI agents. It informs, it doesn't scold — and it lives quietly in your bar all day.</div>
+<div style="display:flex;gap:16px;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)"><span>400</span><span>500</span><span>600</span><span>700</span><span>800</span></div>
+</div>
+<div style="flex:1;min-width:240px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Mono / numerals — IBM Plex Mono</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:56px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--focus)">14:59</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums">tabular · 0123456789 · +1:24</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 24px;margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);line-height:1.5">
+<div>Display · 40/1.05 · 800</div>
+<div>Title · 22/1.2 · 700</div>
+<div>Body · 15/1.6 · 400</div>
+<div>Label · 13/1.4 · 500</div>
+<div>Timer · mono 56 · 600</div>
+<div>Caption · mono 11 · 400</div>
+</div>
+</section>
+
+<!-- Motion -->
+<section style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;box-shadow:var(--shadow)">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:20px">05 — Motion &amp; feel</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px">
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px"><div style="font-weight:700;font-size:14px;margin-bottom:6px">Ring fill</div><div style="font-size:13px;color:var(--muted);line-height:1.55">Continuous, never ticking. State-color crossfade 240ms ease.</div></div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px"><div style="font-weight:700;font-size:14px;margin-bottom:6px">Grace toast</div><div style="font-size:13px;color:var(--muted);line-height:1.55">Slides in 200ms ease-out from the corner. No bounce, no sound.</div></div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px"><div style="font-weight:700;font-size:14px;margin-bottom:6px">Break card</div><div style="font-size:13px;color:var(--muted);line-height:1.55">Fades in + rises 8px over 180ms. Calm entrance, easy exit.</div></div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px"><div style="font-weight:700;font-size:14px;margin-bottom:6px">Restraint</div><div style="font-size:13px;color:var(--muted);line-height:1.55">Nothing bouncy or attention-grabbing. Honors reduce-motion &amp; DND.</div></div>
+</div>
+</section>
+
+<div style="font-size:13px;color:var(--muted);line-height:1.6;padding:2px 4px">Next: the full menu-bar ring state set with @2x tray exports, then the six screens (grace toast, break card, stats, settings, onboarding) in light + dark, then the DTCG token JSON + CSS custom properties. Toggle the theme above to check both.</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1600},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;}}">
+class Component extends DCLogic {
+  constructor(props){ super(props); this.state = { theme: props.theme || 'light' }; this.rootRef = React.createRef(); }
+  themes = {
+    light:{ '--bg':'#f7f3ee','--surface':'#fffdfb','--surface2':'#f0eae2','--border':'#e6ddd2','--muted':'#7a6e64','--text':'#26201c','--tomato':'#e04a2f','--tomato-deep':'#bf3a22','--leaf':'#5c8a3c','--focus':'#128a7a','--grace':'#c98420','--brk':'#4a6bcc','--overrun':'#cf3b30','--success':'#2f9256','--warning':'#c98420','--danger':'#cf3b30','--info':'#3f79cf','--shadow':'0 1px 3px rgba(40,30,20,.08),0 10px 28px rgba(40,30,20,.06)','--c1':'#128a7a','--c2':'#c98420','--c3':'#4a6bcc','--c4':'#9c4fb0','--c5':'#8a7d70' },
+    dark:{ '--bg':'#171310','--surface':'#201b17','--surface2':'#2a241f','--border':'#39312a','--muted':'#a89b8f','--text':'#f2ebe2','--tomato':'#f0603f','--tomato-deep':'#d24a2c','--leaf':'#7bab55','--focus':'#2bb6a2','--grace':'#e5a23e','--brk':'#7a95e6','--overrun':'#eb5a4d','--success':'#4cc07d','--warning':'#e5a23e','--danger':'#eb5a4d','--info':'#6fa0ee','--shadow':'0 1px 3px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35)','--c1':'#2bb6a2','--c2':'#e5a23e','--c3':'#7a95e6','--c4':'#c07fd4','--c5':'#a99a8c' }
+  };
+  componentDidMount(){ this.apply(this.state.theme); }
+  apply(t){ const n=this.rootRef.current; if(!n) return; const v=this.themes[t]||this.themes.light; for(const k in v){ n.style.setProperty(k, v[k]); } }
+  toggle(){ this.setState(s=>({theme: s.theme==='light'?'dark':'light'}), ()=>this.apply(this.state.theme)); }
+  renderVals(){ return { rootRef:this.rootRef, toggle:()=>this.toggle() }; }
+}
+</script>
+</body>
+</html>

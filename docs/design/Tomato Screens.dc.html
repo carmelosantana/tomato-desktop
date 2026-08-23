@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box}body{margin:0}a{color:var(--tomato);text-decoration:none}a:hover{color:var(--tomato-deep)}</style>
+</helmet>
+<div ref="{{ rootRef }}" style="--bg:#f7f3ee;--surface:#fffdfb;--surface2:#f0eae2;--border:#e6ddd2;--muted:#7a6e64;--text:#26201c;--tomato:#e04a2f;--tomato-deep:#bf3a22;--leaf:#5c8a3c;--focus:#128a7a;--grace:#c98420;--brk:#4a6bcc;--overrun:#cf3b30;--success:#2f9256;--warning:#c98420;--danger:#cf3b30;--info:#3f79cf;--shadow:0 1px 3px rgba(40,30,20,.08),0 12px 30px rgba(40,30,20,.10);--c1:#128a7a;--c2:#c98420;--c3:#4a6bcc;--c4:#9c4fb0;--c5:#8a7d70;font-family:'Hanken Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:44px 48px 72px">
+
+<div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:34px">
+
+<!-- header -->
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+<div style="display:flex;align-items:center;gap:14px">
+<svg width="42" height="42" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="66" r="42" fill="none" stroke="var(--border)" stroke-width="11"/><circle cx="60" cy="66" r="42" fill="none" stroke="var(--tomato)" stroke-width="11" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 66)"/><line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round"/><circle cx="60" cy="24" r="8" fill="var(--leaf)"/></svg>
+<div><div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1">Tomato · Screens</div><div style="font-size:13px;color:var(--muted);margin-top:3px">Six surfaces · light + dark · hybrid mark</div></div>
+</div>
+<button onClick="{{ toggle }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:8px 16px;cursor:pointer;box-shadow:var(--shadow)">◑ Toggle theme</button>
+</div>
+
+<!-- ROW 1: tray + toast + notifications -->
+<div style="display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start">
+
+<!-- Tray context -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">01 · Tray &amp; menu</div>
+<div style="width:300px;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border)">
+<div style="background:var(--text);display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:7px 12px">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bg);opacity:.6">◔ ⏻ ▤</span>
+<svg width="18" height="18" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--bg)" stroke-width="12" opacity="0.28"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--focus)" stroke-width="12" stroke-linecap="round" stroke-dasharray="230 97" transform="rotate(-90 60 60)"/></svg>
+<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bg);font-variant-numeric:tabular-nums">4:12</span>
+</div>
+<div style="background:var(--surface);padding:6px">
+<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;background:var(--surface2);font-size:14px;font-weight:600">● Start focus <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">15:00</span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:14px;color:var(--text)">■ Stop</div>
+<div style="height:1px;background:var(--border);margin:4px 8px"></div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:14px;color:var(--text)">▤ Stats…</div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:14px;color:var(--text)">⚙ Settings…</div>
+<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:14px;color:var(--muted)">Quit</div>
+</div>
+</div>
+</div>
+
+<!-- Grace toast + soft/DND variants -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">02 · Grace toast &amp; nudges</div>
+<!-- toast -->
+<div style="width:372px;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--grace);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;display:flex;align-items:center;gap:14px">
+<svg width="34" height="34" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" stroke-width="14"/><circle cx="60" cy="60" r="50" fill="none" stroke="var(--grace)" stroke-width="14" stroke-linecap="round" stroke-dasharray="314 0" transform="rotate(-90 60 60)"/></svg>
+<div style="flex:1"><div style="font-size:14.5px;font-weight:700;color:var(--text)">◑ Wrap up — break in <span style="font-family:'IBM Plex Mono',monospace;color:var(--grace)">2:00</span></div><div style="font-size:12.5px;color:var(--muted);margin-top:2px">Reach a stopping point when you're ready.</div></div>
+<button style="font-family:'Hanken Grotesk',sans-serif;font-size:12.5px;font-weight:600;color:#fff;background:var(--grace);border:none;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap">Break now</button>
+</div>
+<!-- soft mode notification -->
+<div style="width:372px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+<svg width="26" height="26" viewBox="0 0 120 120"><circle cx="60" cy="66" r="42" fill="none" stroke="var(--tomato)" stroke-width="12" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 66)"/><line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round"/><circle cx="60" cy="24" r="8" fill="var(--leaf)"/></svg>
+<div style="flex:1"><div style="font-size:13px;font-weight:600">Tomato · Soft mode</div><div style="font-size:12.5px;color:var(--muted)">Sprint's up. Break when it suits you.</div></div>
+<span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted)">OS notif</span>
+</div>
+<!-- DND degraded -->
+<div style="width:372px;background:var(--surface2);border:1px dashed var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;opacity:.92">
+<span style="font-size:16px;color:var(--muted)">◐</span>
+<div style="flex:1"><div style="font-size:13px;font-weight:600">Tomato <span style="font-weight:400;color:var(--muted)">· DND aware</span></div><div style="font-size:12.5px;color:var(--muted)">Card suppressed — quiet notification only, no sound.</div></div>
+<span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted)">time-sensitive</span>
+</div>
+</div>
+
+<!-- Break card -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">03 · Break card · always-on-top</div>
+<div style="width:420px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:30px 28px;display:flex;flex-direction:column;align-items:center;gap:6px">
+<div style="align-self:stretch;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)"><span style="font-family:'IBM Plex Mono',monospace">◼ BREAK</span><span style="font-family:'IBM Plex Mono',monospace">▲ pinned</span></div>
+<div style="position:relative;width:172px;height:172px;display:flex;align-items:center;justify-content:center;margin:8px 0 4px">
+<svg width="172" height="172" viewBox="0 0 120 120" style="position:absolute;inset:0"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="9" stroke-dasharray="2.5 8" stroke-linecap="round"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--brk)" stroke-width="9" stroke-linecap="round" stroke-dasharray="291 36" transform="rotate(-90 60 60)"/></svg>
+<div style="text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:46px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--text);line-height:1">4:37</div><div style="font-size:12px;color:var(--muted);margin-top:2px">of 5:00 rest</div></div>
+</div>
+<div style="font-size:14px;color:var(--muted);text-align:center;max-width:280px;line-height:1.5">Time to step away. Your break will end on its own.</div>
+<div style="display:flex;gap:10px;margin-top:14px;align-self:stretch">
+<button style="flex:1;font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer">Skip</button>
+<button style="flex:1;font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;background:var(--brk);border:none;border-radius:10px;padding:12px;cursor:pointer">Return to work</button>
+</div>
+</div>
+</div>
+
+</div>
+
+<!-- ROW 2: stats window -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">04 · Stats window · the test instrument</div>
+<div style="width:740px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;padding:16px 22px;border-bottom:1px solid var(--border)">
+<svg width="22" height="22" viewBox="0 0 120 120"><circle cx="60" cy="66" r="42" fill="none" stroke="var(--tomato)" stroke-width="12" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 66)"/><line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round"/><circle cx="60" cy="24" r="8" fill="var(--leaf)"/></svg>
+<div style="font-size:17px;font-weight:700">Today</div>
+<div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)">Fri · Aug 23</div>
+</div>
+<div style="padding:22px">
+<!-- stat tiles -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:15px"><div style="font-size:12px;color:var(--muted)">● Sprints</div><div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--focus);margin-top:4px">7</div></div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:15px"><div style="font-size:12px;color:var(--muted)">◼ Breaks</div><div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;margin-top:4px"><span style="color:var(--brk)">5</span><span style="color:var(--muted);font-size:18px"> / 2 skip</span></div></div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:15px"><div style="font-size:12px;color:var(--muted)">▲ Over-run</div><div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--overrun);margin-top:4px">+6:12 <span style="font-size:13px;color:var(--muted)">▲</span></div></div>
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:15px"><div style="font-size:12px;color:var(--muted)">✦ Streak</div><div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--leaf);margin-top:4px">4</div></div>
+</div>
+<!-- timeline -->
+<div style="margin-top:20px">
+<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Day timeline · <span style="color:var(--focus)">focus</span> · <span style="color:var(--brk)">break</span> · <span style="color:var(--overrun)">over-run</span></div>
+<div style="display:flex;gap:3px;height:26px;border-radius:6px;overflow:hidden">
+<div style="flex:14;background:var(--focus)"></div><div style="flex:3;background:var(--brk)"></div><div style="flex:15;background:var(--focus)"></div><div style="flex:2;background:var(--overrun)"></div><div style="flex:3;background:var(--brk)"></div><div style="flex:15;background:var(--focus)"></div><div style="flex:3;background:var(--brk)"></div><div style="flex:14;background:var(--focus)"></div><div style="flex:4;background:var(--surface2)"></div><div style="flex:15;background:var(--focus)"></div><div style="flex:3;background:var(--overrun)"></div><div style="flex:3;background:var(--brk)"></div><div style="flex:14;background:var(--focus)"></div></div>
+<div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px"><span>9a</span><span>11a</span><span>1p</span><span>3p</span><span>5p</span></div>
+</div>
+<!-- charts row -->
+<div style="display:flex;gap:16px;margin-top:20px">
+<div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:16px">
+<svg width="88" height="88" viewBox="0 0 120 120"><circle cx="60" cy="60" r="46" fill="none" stroke="var(--brk)" stroke-width="16" stroke-dasharray="206 83" transform="rotate(-90 60 60)"/><circle cx="60" cy="60" r="46" fill="none" stroke="var(--muted)" stroke-width="16" stroke-dasharray="83 206" stroke-dashoffset="-206" transform="rotate(-90 60 60)"/></svg>
+<div><div style="font-size:13px;font-weight:700;margin-bottom:8px">Breaks</div><div style="display:flex;align-items:center;gap:7px;font-size:12.5px;margin-bottom:3px"><span style="width:10px;height:10px;border-radius:3px;background:var(--brk);display:inline-block"></span>Taken <b>5</b></div><div style="display:flex;align-items:center;gap:7px;font-size:12.5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--muted);display:inline-block"></span>Skipped <b>2</b></div></div>
+</div>
+<div style="flex:1.4;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">
+<div style="font-size:13px;font-weight:700;margin-bottom:12px">This week · sprints</div>
+<div style="display:flex;align-items:flex-end;gap:10px;height:70px">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:44px;background:var(--c1);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted)">M</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:60px;background:var(--c1);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted)">T</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:32px;background:var(--c1);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted)">W</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:52px;background:var(--c1);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted)">T</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:66px;background:var(--tomato);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--text)">F</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:14px;background:var(--border);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted)">S</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:8px;background:var(--border);border-radius:4px"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted)">S</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ROW 3: settings + onboarding -->
+<div style="display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start">
+
+<!-- Settings -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">05 · Settings</div>
+<div style="width:520px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+<div style="padding:16px 22px;border-bottom:1px solid var(--border);font-size:17px;font-weight:700">Settings</div>
+<div style="padding:20px 22px;display:flex;flex-direction:column;gap:2px">
+<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:14px;font-weight:600">Sprint length</div><div style="font-size:12px;color:var(--muted)">60 s – 60 min</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:15px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px">15:00</div></div>
+<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:14px;font-weight:600">Break length</div><div style="font-size:12px;color:var(--muted)">default 5 min</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:15px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px">5:00</div></div>
+<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:14px;font-weight:600">Grace window</div><div style="font-size:12px;color:var(--muted)">wrap-up after boundary · early flow 5:00</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:15px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px">2:00</div></div>
+<div style="display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:14px;font-weight:600">Enforcement</div><div style="font-size:12px;color:var(--muted)">how firmly the break is pushed</div></div>
+<div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:3px">
+<div style="font-size:13px;font-weight:600;color:#fff;background:var(--tomato);border-radius:6px;padding:6px 14px">Enforced</div>
+<div style="font-size:13px;font-weight:500;color:var(--muted);padding:6px 14px">Soft</div>
+</div></div>
+<div style="display:flex;align-items:center;padding:14px 0"><div style="flex:1"><div style="font-size:14px;font-weight:600">Autostart on login</div><div style="font-size:12px;color:var(--muted)">launch Tomato with your session</div></div>
+<div style="width:44px;height:26px;border-radius:999px;background:var(--focus);position:relative"><div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div></div>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--border);background:var(--surface2)">
+<button style="font-family:'Hanken Grotesk',sans-serif;font-size:13.5px;font-weight:600;color:var(--text);background:transparent;border:1px solid var(--border);border-radius:9px;padding:9px 16px;cursor:pointer">Cancel</button>
+<button style="font-family:'Hanken Grotesk',sans-serif;font-size:13.5px;font-weight:700;color:#fff;background:var(--tomato);border:none;border-radius:9px;padding:9px 18px;cursor:pointer">Save</button>
+</div>
+</div>
+</div>
+
+<!-- Onboarding -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">06 · First run · onboarding</div>
+<div style="width:440px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:32px 30px;display:flex;flex-direction:column;align-items:center;gap:16px">
+<svg width="88" height="88" viewBox="0 0 120 120"><circle cx="60" cy="66" r="42" fill="none" stroke="var(--border)" stroke-width="11"/><circle cx="60" cy="66" r="42" fill="none" stroke="var(--tomato)" stroke-width="11" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 66)"/><line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round"/><circle cx="60" cy="24" r="8" fill="var(--leaf)"/></svg>
+<div style="text-align:center"><div style="font-size:22px;font-weight:800;letter-spacing:-0.02em">Work in 15-minute windows.</div><div style="font-size:14.5px;color:var(--muted);line-height:1.55;margin-top:8px">Focus for a sprint, then take a real break. Your agents keep working while you step away — so stopping costs nothing.</div></div>
+<div style="display:flex;gap:8px;margin-top:2px"><span style="width:8px;height:8px;border-radius:50%;background:var(--border)"></span><span style="width:20px;height:8px;border-radius:999px;background:var(--tomato)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--border)"></span></div>
+<div style="display:flex;gap:10px;width:100%;margin-top:6px">
+<button style="flex:1;font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer">Skip</button>
+<button style="flex:2;font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;background:var(--tomato);border:none;border-radius:10px;padding:12px;cursor:pointer">Next — set durations</button>
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="font-size:13px;color:var(--muted);line-height:1.6;padding:2px 4px">Copy stays neutral and non-judgmental per the brief. Charts use the color-blind-safe categorical palette; every state is paired with a glyph. Next up: the DTCG token JSON + CSS custom-properties export. Toggle the theme to review both.</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:1700},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;}}">
+class Component extends DCLogic {
+  constructor(props){ super(props); this.state = { theme: props.theme || 'light' }; this.rootRef = React.createRef(); }
+  themes = {
+    light:{ '--bg':'#f7f3ee','--surface':'#fffdfb','--surface2':'#f0eae2','--border':'#e6ddd2','--muted':'#7a6e64','--text':'#26201c','--tomato':'#e04a2f','--tomato-deep':'#bf3a22','--leaf':'#5c8a3c','--focus':'#128a7a','--grace':'#c98420','--brk':'#4a6bcc','--overrun':'#cf3b30','--success':'#2f9256','--warning':'#c98420','--danger':'#cf3b30','--info':'#3f79cf','--shadow':'0 1px 3px rgba(40,30,20,.08),0 12px 30px rgba(40,30,20,.10)','--c1':'#128a7a','--c2':'#c98420','--c3':'#4a6bcc','--c4':'#9c4fb0','--c5':'#8a7d70' },
+    dark:{ '--bg':'#171310','--surface':'#201b17','--surface2':'#2a241f','--border':'#39312a','--muted':'#a89b8f','--text':'#f2ebe2','--tomato':'#f0603f','--tomato-deep':'#d24a2c','--leaf':'#7bab55','--focus':'#2bb6a2','--grace':'#e5a23e','--brk':'#7a95e6','--overrun':'#eb5a4d','--success':'#4cc07d','--warning':'#e5a23e','--danger':'#eb5a4d','--info':'#6fa0ee','--shadow':'0 1px 3px rgba(0,0,0,.4),0 14px 34px rgba(0,0,0,.4)','--c1':'#2bb6a2','--c2':'#e5a23e','--c3':'#7a95e6','--c4':'#c07fd4','--c5':'#a99a8c' }
+  };
+  componentDidMount(){ this.apply(this.state.theme); }
+  apply(t){ const n=this.rootRef.current; if(!n) return; const v=this.themes[t]||this.themes.light; for(const k in v){ n.style.setProperty(k, v[k]); } }
+  toggle(){ this.setState(s=>({theme: s.theme==='light'?'dark':'light'}), ()=>this.apply(this.state.theme)); }
+  renderVals(){ return { rootRef:this.rootRef, toggle:()=>this.toggle() }; }
+}
+</script>
+</body>
+</html>

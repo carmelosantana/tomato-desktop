@@ -1,0 +1,181 @@
+/* Tomato — agentic Pomodoro · design tokens (CSS custom properties)
+   Light is :root; dark applies via [data-theme="dark"] and prefers-color-scheme.
+   Color-blind-safe: every state pairs its color with a glyph (● focus, ◑ grace, ◼ break, ▲ over-run). */
+
+:root {
+  /* brand */
+  --tomato: #e04a2f;
+  --tomato-deep: #bf3a22;
+  --leaf: #5c8a3c;
+
+  /* neutrals (warm) */
+  --bg: #f7f3ee;
+  --surface: #fffdfb;
+  --surface-2: #f0eae2;
+  --border: #e6ddd2;
+  --text-muted: #7a6e64;
+  --text: #26201c;
+
+  /* semantic states */
+  --focus: #128a7a;
+  --grace: #c98420;
+  --break: #4a6bcc;
+  --overrun: #cf3b30;
+
+  /* status */
+  --success: #2f9256;
+  --warning: #c98420;
+  --danger: #cf3b30;
+  --info: #3f79cf;
+
+  /* chart (categorical) */
+  --chart-1: #128a7a;
+  --chart-2: #c98420;
+  --chart-3: #4a6bcc;
+  --chart-4: #9c4fb0;
+  --chart-5: #8a7d70;
+
+  /* ring (tray) */
+  --ring-track: var(--border);
+  --ring-progress-focus: var(--focus);
+  --ring-progress-grace: var(--grace);
+  --ring-progress-overrun: var(--overrun);
+  --ring-diameter-ratio: 0.84;
+  --ring-stroke-ratio: 0.15;
+  --ring-inner-gap: 2px;
+  --ring-start-angle: -90deg;
+  --ring-cap: round;
+
+  /* typography */
+  --font-display: "Hanken Grotesk", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --size-caption: 11px;
+  --size-small: 13px;
+  --size-body: 15px;
+  --size-label: 17px;
+  --size-title: 22px;
+  --size-display: 40px;
+  --size-timer: 46px;
+  --lh-tight: 1.05;
+  --lh-snug: 1.2;
+  --lh-normal: 1.5;
+  --lh-loose: 1.6;
+
+  /* spacing */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 22px;
+  --space-6: 30px;
+  --space-7: 44px;
+
+  /* radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* borders */
+  --border-hairline: 1px;
+  --border-thick: 2px;
+
+  /* elevation */
+  --shadow-card: 0 1px 3px rgba(40,30,20,.08), 0 12px 30px rgba(40,30,20,.10);
+
+  /* opacity */
+  --opacity-track: 0.28;
+  --opacity-muted: 0.6;
+  --opacity-disabled: 0.4;
+
+  /* motion */
+  --duration-state: 240ms;
+  --duration-toast-in: 200ms;
+  --duration-card-in: 180ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* icon */
+  --icon-stroke: 2px;
+  --icon-grid: 24px;
+}
+
+:root[data-theme="dark"] {
+  --tomato: #f0603f;
+  --tomato-deep: #d24a2c;
+  --leaf: #7bab55;
+
+  --bg: #171310;
+  --surface: #201b17;
+  --surface-2: #2a241f;
+  --border: #39312a;
+  --text-muted: #a89b8f;
+  --text: #f2ebe2;
+
+  --focus: #2bb6a2;
+  --grace: #e5a23e;
+  --break: #7a95e6;
+  --overrun: #eb5a4d;
+
+  --success: #4cc07d;
+  --warning: #e5a23e;
+  --danger: #eb5a4d;
+  --info: #6fa0ee;
+
+  --chart-1: #2bb6a2;
+  --chart-2: #e5a23e;
+  --chart-3: #7a95e6;
+  --chart-4: #c07fd4;
+  --chart-5: #a99a8c;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,.4), 0 14px 34px rgba(0,0,0,.40);
+}
+
+/* Auto dark when the app has no explicit override */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tomato: #f0603f;
+    --tomato-deep: #d24a2c;
+    --leaf: #7bab55;
+
+    --bg: #171310;
+    --surface: #201b17;
+    --surface-2: #2a241f;
+    --border: #39312a;
+    --text-muted: #a89b8f;
+    --text: #f2ebe2;
+
+    --focus: #2bb6a2;
+    --grace: #e5a23e;
+    --break: #7a95e6;
+    --overrun: #eb5a4d;
+
+    --success: #4cc07d;
+    --warning: #e5a23e;
+    --danger: #eb5a4d;
+    --info: #6fa0ee;
+
+    --chart-1: #2bb6a2;
+    --chart-2: #e5a23e;
+    --chart-3: #7a95e6;
+    --chart-4: #c07fd4;
+    --chart-5: #a99a8c;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,.4), 0 14px 34px rgba(0,0,0,.40);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-state: 1ms;
+    --duration-toast-in: 1ms;
+    --duration-card-in: 1ms;
+  }
+}
