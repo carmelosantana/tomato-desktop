@@ -28,3 +28,6 @@ coverage/
 
 # Design kit working files (keep sources, drop editor cruft)
 docs/design/.thumbnail/
+
+# SDD scratch (subagent-driven-development ledger, briefs, review packages)
+.superpowers/
