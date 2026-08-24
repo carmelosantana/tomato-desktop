@@ -46,6 +46,13 @@ const COLD_IDLE_THRESHOLD_S = 30 * 60;
 const GRACE_TOAST_LABEL = "grace-toast";
 const BREAK_CARD_LABEL = "break-card";
 
+/** Stats window label — must match capabilities/stats-window.json. */
+const STATS_LABEL = "stats";
+
+/** Stats window logical size (px). */
+const STATS_W = 720;
+const STATS_H = 520;
+
 /** Boundary window logical sizes (px) + screen-edge margin. */
 const TOAST_W = 404;
 const TOAST_H = 108;
@@ -219,6 +226,38 @@ async function main(): Promise<void> {
     await closeBreakCard();
   }
 
+  // --- Stats window ----------------------------------------------------------
+
+  // The stats window (null when closed). Reused/focused if already open.
+  let statsWindow: WebviewWindow | null = null;
+
+  /**
+   * Open the stats window, or focus it if it is already open. The window reads
+   * the event log itself and computes the adherence view on load. Its ref is
+   * cleared when the user closes it, so the next open recreates it fresh.
+   */
+  async function openStats(): Promise<void> {
+    if (statsWindow) {
+      await statsWindow.show().catch(() => {});
+      await statsWindow.setFocus().catch(() => {});
+      return;
+    }
+    const win = new WebviewWindow(STATS_LABEL, {
+      url: "src/stats.html",
+      title: "Tomato — stats",
+      width: STATS_W,
+      height: STATS_H,
+      resizable: true,
+      center: true,
+      focus: true,
+    });
+    statsWindow = win;
+    win.once("tauri://error", (e) => console.error("stats window failed", e));
+    win.once("tauri://destroyed", () => {
+      statsWindow = null;
+    });
+  }
+
   /** Push the current countdown to whichever boundary window is open. */
   async function pushBoundaryUpdates(): Promise<void> {
     const snap = machine.snapshot(Date.now());
@@ -322,6 +361,7 @@ async function main(): Promise<void> {
       { id: "start", text: "Start", action: () => void onStart() },
       { id: "stop", text: "Stop", action: () => void onStop() },
       { item: "Separator" },
+      { id: "stats", text: "Stats…", action: () => void openStats() },
       // Settings UI lands in a later task; stub for now.
       { id: "settings", text: "Settings…", enabled: false, action: () => {} },
       { item: "Separator" },
@@ -333,6 +373,15 @@ async function main(): Promise<void> {
     id: "tomato",
     tooltip: "Tomato",
     menu,
+    // Show the menu on right-click only, so a left-click can open Stats. (On
+    // some Linux panels the tray only ever opens the menu and click events may
+    // not fire; the Stats menu item is the always-available fallback.)
+    showMenuOnLeftClick: false,
+    action: (event) => {
+      if (event.type === "Click" && event.button === "Left" && event.buttonState === "Up") {
+        void openStats();
+      }
+    },
   });
 
   await refreshIcon();

@@ -1,0 +1,253 @@
+/* Stats window — the adherence "test instrument". Theme-aware via tokens.css
+   (light :root / dark [data-theme]); numbers use --font-mono. Charts are
+   hand-rolled inline SVG injected by stats.ts. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.wrap {
+  padding: 18px 20px 22px;
+}
+
+/* --- header ---------------------------------------------------------------- */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.head .title {
+  font-size: var(--size-label);
+  font-weight: var(--weight-bold);
+}
+.head .date {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* --- stat tiles ------------------------------------------------------------ */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+.tile {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+}
+.tile .cap {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.tile .val {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: var(--weight-semibold);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.val .sub {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+.val .glyph {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.tile.sprints .val {
+  color: var(--focus);
+}
+.tile.breaks .val .taken {
+  color: var(--break);
+}
+.tile.overrun .val {
+  color: var(--overrun);
+}
+.tile.overrun.zero .val {
+  color: var(--text-muted);
+}
+.tile.streak .val {
+  color: var(--leaf);
+}
+
+/* --- day timeline ---------------------------------------------------------- */
+.section {
+  margin-top: 18px;
+}
+.section-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.section-label .focus {
+  color: var(--focus);
+}
+.section-label .brk {
+  color: var(--break);
+}
+.timeline {
+  position: relative;
+  height: 26px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.timeline .seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.timeline .seg.sprint {
+  background: var(--focus);
+}
+.timeline .seg.break {
+  background: var(--break);
+}
+.timeline-axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+.timeline-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* --- charts row ------------------------------------------------------------ */
+.charts {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+}
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 15px;
+}
+.card .card-title {
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  margin-bottom: 10px;
+}
+.card.donut-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+}
+.legend-row .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+}
+.legend-row .swatch.taken {
+  background: var(--break);
+}
+.legend-row .swatch.skipped {
+  /* Color-blind safe: skipped also carries a diagonal-hatch glyph via ✕ label. */
+  background: var(--chart-5);
+}
+.legend-row b {
+  font-family: var(--font-mono);
+}
+
+.card.week-card {
+  flex: 1.4;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 74px;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.bar-track {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 4px;
+}
+.bar {
+  width: 100%;
+  background: var(--chart-1);
+  border-radius: 4px;
+  min-height: 2px;
+}
+.bar.today {
+  background: var(--tomato);
+}
+.bar.empty {
+  background: var(--border);
+  height: 3px;
+  min-height: 3px;
+}
+.bar-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+.bar-label.today {
+  color: var(--text);
+}
+.bar-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  min-height: 12px;
+}

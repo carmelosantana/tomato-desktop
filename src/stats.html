@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tomato — stats</title>
+    <link rel="stylesheet" href="styles/fonts.css" />
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/stats.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <!-- header -->
+      <div class="head">
+        <svg width="22" height="22" viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="66" r="42" fill="none" stroke="var(--tomato)" stroke-width="12" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 66)" />
+          <line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round" />
+          <circle cx="60" cy="24" r="8" fill="var(--leaf)" />
+        </svg>
+        <div class="title">Today</div>
+        <div class="date" id="date">—</div>
+      </div>
+
+      <!-- stat tiles -->
+      <div class="tiles">
+        <div class="tile sprints">
+          <div class="cap">● Sprints</div>
+          <div class="val" id="sprints">0</div>
+        </div>
+        <div class="tile breaks">
+          <div class="cap">◼ Breaks</div>
+          <div class="val" id="breaks"><span class="taken">0</span><span class="sub"> / 0 skip</span></div>
+        </div>
+        <div class="tile overrun">
+          <div class="cap">▲ Over-run</div>
+          <div class="val" id="overrun">0:00</div>
+        </div>
+        <div class="tile streak">
+          <div class="cap">✦ Streak</div>
+          <div class="val" id="streak">0</div>
+        </div>
+      </div>
+
+      <!-- day timeline -->
+      <div class="section">
+        <div class="section-label">
+          Day timeline · <span class="focus">● focus</span> · <span class="brk">◼ break</span>
+        </div>
+        <div class="timeline" id="timeline" aria-label="Today's sprint and break timeline"></div>
+        <div class="timeline-axis" id="timeline-axis"></div>
+      </div>
+
+      <!-- charts row -->
+      <div class="charts">
+        <div class="card donut-card">
+          <div id="donut" aria-hidden="true"></div>
+          <div>
+            <div class="card-title">Breaks</div>
+            <div class="donut-legend">
+              <div class="legend-row">
+                <span class="swatch taken"></span>● Taken <b id="legend-taken">0</b>
+              </div>
+              <div class="legend-row">
+                <span class="swatch skipped"></span>✕ Skipped <b id="legend-skipped">0</b>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card week-card">
+          <div class="card-title">This week · sprints</div>
+          <div class="bars" id="bars"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./stats.ts"></script>
+  </body>
+</html>
