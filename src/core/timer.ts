@@ -37,7 +37,7 @@ export type TimerEvent =
   | { type: "stopped"; at: number };
 
 export class TimerMachine {
-  private readonly config: TimerConfig;
+  private config: TimerConfig;
 
   private state: TimerState = "idle";
   private lastTick = 0;
@@ -54,6 +54,21 @@ export class TimerMachine {
 
   constructor(config: TimerConfig) {
     this.config = config;
+  }
+
+  /**
+   * Replace the timing config. Intended for use BETWEEN sprints (when idle or
+   * stopped) so a settings change takes effect on the next sprint without
+   * disturbing an in-progress one — callers must gate on state. State, elapsed
+   * accumulators, and streakIndex are left untouched.
+   */
+  setConfig(config: TimerConfig): void {
+    this.config = config;
+  }
+
+  /** Read-only view of the machine's current lifecycle state (no mutation). */
+  currentState(): TimerState {
+    return this.state;
   }
 
   /** Effective grace for the current sprint: early grace on the first of a streak. */

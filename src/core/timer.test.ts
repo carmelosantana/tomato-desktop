@@ -38,6 +38,31 @@ describe("TimerMachine (enforced)", () => {
   });
 });
 
+describe("TimerMachine setConfig (settings applied on the next sprint)", () => {
+  it("exposes lifecycle state and applies a new config to the next sprint", () => {
+    const t = new TimerMachine(cfg);
+    expect(t.currentState()).toBe("idle");
+    // Run one full sprint so streakIndex advances to 1 (past early grace).
+    t.start(0);
+    t.tick(cfg.sprintMs);                                   // → grace
+    t.tick(cfg.sprintMs + cfg.earlyGraceMs);                // → break
+    t.tick(cfg.sprintMs + cfg.earlyGraceMs + cfg.breakMs);  // → idle, streak=1
+    expect(t.currentState()).toBe("idle");
+    expect(t.snapshot(0).streakIndex).toBe(1);
+
+    // Swap to a shorter sprint while idle; streak is preserved (normal grace).
+    const shorter = { ...cfg, sprintMs: 60_000, mode: "soft" as const };
+    t.setConfig(shorter);
+    expect(t.snapshot(0).streakIndex).toBe(1);
+
+    const base = 10_000_000;
+    t.start(base);
+    // New sprint length + mode: boundary at 60s emits a soft-mode nudge.
+    expect(types(t.tick(base + 60_000))).toEqual(["boundary-reached", "nudge"]);
+    expect(t.snapshot(base + 60_000).state).toBe("focus");
+  });
+});
+
 describe("TimerMachine (soft)", () => {
   it("nudges at boundary and stays in focus", () => {
     const t = new TimerMachine({ ...cfg, mode: "soft" }); t.start(0);

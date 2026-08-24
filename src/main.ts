@@ -30,6 +30,7 @@ import {
 import type { GraceUpdate, BreakUpdate } from "./core/boundaryEvents";
 import { loadConfig } from "./native/config";
 import type { TomatoConfig } from "./native/config";
+import { SETTINGS_SAVED } from "./core/settingsForm";
 import { jsonlEventStore } from "./native/eventStore";
 import { renderRing, staticIconUrl } from "./native/trayIcon";
 import { dndDetector } from "./native/dnd";
@@ -49,6 +50,13 @@ const BREAK_CARD_LABEL = "break-card";
 /** Stats window label — must match capabilities/stats-window.json. */
 const STATS_LABEL = "stats";
 
+/** Settings window label — must match capabilities/settings-window.json. */
+const SETTINGS_LABEL = "settings";
+
+/** Settings window logical size (px), per the design's Settings screen. */
+const SETTINGS_W = 560;
+const SETTINGS_H = 480;
+
 /** Stats window logical size (px). */
 const STATS_W = 720;
 const STATS_H = 520;
@@ -66,15 +74,23 @@ const systemDark = (): boolean =>
 const theme = (): Theme => (systemDark() ? "dark" : "light");
 
 async function main(): Promise<void> {
-  const config: TomatoConfig = await loadConfig();
-  const timerConfig: TimerConfig = {
-    sprintMs: config.sprint_s * 1000,
-    breakMs: config.break_s * 1000,
-    graceMs: config.grace_s * 1000,
-    earlyGraceMs: config.early_grace_s * 1000,
-    mode: config.mode,
-  };
+  const toTimerConfig = (c: TomatoConfig): TimerConfig => ({
+    sprintMs: c.sprint_s * 1000,
+    breakMs: c.break_s * 1000,
+    graceMs: c.grace_s * 1000,
+    earlyGraceMs: c.early_grace_s * 1000,
+    mode: c.mode,
+  });
+
+  // `config` + `timerConfig` are re-read when the settings window saves. A save
+  // during an in-progress sprint is deferred (see `pendingConfig`) so durations
+  // and mode only ever change on the NEXT sprint, never mid-sprint.
+  let config: TomatoConfig = await loadConfig();
+  let timerConfig: TimerConfig = toTimerConfig(config);
   const machine = new TimerMachine(timerConfig);
+
+  // A config saved while a sprint is running, held until the machine is idle.
+  let pendingConfig: TomatoConfig | null = null;
 
   // Per-lifecycle ids threaded into the event mapper; minted on the boundaries.
   let sprintId = "";
@@ -258,6 +274,62 @@ async function main(): Promise<void> {
     });
   }
 
+  // --- Settings window + live config reload ----------------------------------
+
+  // The settings window (null when closed). Reused/focused if already open.
+  let settingsWindow: WebviewWindow | null = null;
+
+  /** Open the settings window, or focus it if it is already open. */
+  async function openSettings(): Promise<void> {
+    if (settingsWindow) {
+      await settingsWindow.show().catch(() => {});
+      await settingsWindow.setFocus().catch(() => {});
+      return;
+    }
+    const win = new WebviewWindow(SETTINGS_LABEL, {
+      url: "src/settings.html",
+      title: "Tomato — settings",
+      width: SETTINGS_W,
+      height: SETTINGS_H,
+      resizable: false,
+      center: true,
+      focus: true,
+    });
+    settingsWindow = win;
+    win.once("tauri://error", (e) => console.error("settings window failed", e));
+    win.once("tauri://destroyed", () => {
+      settingsWindow = null;
+    });
+  }
+
+  /**
+   * Apply a pending config swap, but ONLY when the machine is between sprints
+   * (idle/stopped) so an in-progress sprint is never disturbed. The new
+   * durations + mode then take effect on the next start(). Streak is preserved.
+   */
+  function applyPendingConfig(): void {
+    if (!pendingConfig) return;
+    const state = machine.currentState();
+    if (state !== "idle" && state !== "stopped") return;
+    config = pendingConfig;
+    pendingConfig = null;
+    timerConfig = toTimerConfig(config);
+    machine.setConfig(timerConfig);
+  }
+
+  // Settings saved → re-read config. Applied immediately if idle, otherwise
+  // deferred so the change lands on the next sprint without interrupting this one.
+  await listen(SETTINGS_SAVED, () => {
+    void (async () => {
+      try {
+        pendingConfig = await loadConfig();
+        applyPendingConfig();
+      } catch (err) {
+        console.error("settings reload failed", err);
+      }
+    })();
+  });
+
   /** Push the current countdown to whichever boundary window is open. */
   async function pushBoundaryUpdates(): Promise<void> {
     const snap = machine.snapshot(Date.now());
@@ -331,6 +403,8 @@ async function main(): Promise<void> {
   }
 
   async function onStart(): Promise<void> {
+    // Pick up any config saved during the previous sprint before this one begins.
+    applyPendingConfig();
     // Cold-idle reset: a long gap since the last event begins a fresh streak so
     // the next sprint gets early grace (Task 3 carry-forward).
     const nowS = toS(Date.now());
@@ -362,8 +436,7 @@ async function main(): Promise<void> {
       { id: "stop", text: "Stop", action: () => void onStop() },
       { item: "Separator" },
       { id: "stats", text: "Stats…", action: () => void openStats() },
-      // Settings UI lands in a later task; stub for now.
-      { id: "settings", text: "Settings…", enabled: false, action: () => {} },
+      { id: "settings", text: "Settings…", action: () => void openSettings() },
       { item: "Separator" },
       { item: "Quit", text: "Quit" },
     ],

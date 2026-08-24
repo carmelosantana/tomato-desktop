@@ -25,6 +25,7 @@ export default defineConfig(async () => ({
         "grace-toast": resolve(root, "src/grace-toast.html"),
         "break-card": resolve(root, "src/break-card.html"),
         stats: resolve(root, "src/stats.html"),
+        settings: resolve(root, "src/settings.html"),
       },
     },
   },
