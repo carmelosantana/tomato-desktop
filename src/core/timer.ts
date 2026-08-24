@@ -185,6 +185,10 @@ export class TimerMachine {
   skipBreak(now: number): TimerEvent[] {
     const events = this.tick(now);
     if (this.state === "grace" || this.state === "break" || this.state === "focus") {
+      // Exiting grace: close it with grace-ended before break-skipped (symmetry).
+      if (this.state === "grace") {
+        events.push({ type: "grace-ended", at: now, ended_by: "user" });
+      }
       this.state = "idle";
       this.streakIndex += 1;
       events.push({ type: "break-skipped", at: now });

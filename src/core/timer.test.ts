@@ -50,7 +50,9 @@ describe("TimerMachine transition coverage (paths the event mapper consumes)", (
   it("skipBreak from grace returns to idle and counts the streak", () => {
     const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs); // → grace
     const es = t.skipBreak(cfg.sprintMs + 1_000);
-    expect(types(es)).toEqual(["break-skipped"]);
+    expect(types(es)).toEqual(["grace-ended","break-skipped"]);
+    const graceEnded = es.find(e => e.type === "grace-ended");
+    expect(graceEnded && "ended_by" in graceEnded && graceEnded.ended_by).toBe("user");
     expect(t.snapshot(cfg.sprintMs + 1_000).state).toBe("idle");
     expect(t.snapshot(cfg.sprintMs + 1_000).streakIndex).toBe(1);
   });
