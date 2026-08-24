@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tomato — welcome</title>
+    <link rel="stylesheet" href="styles/fonts.css" />
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/onboarding.css" />
+  </head>
+  <body>
+    <div class="card">
+      <!-- Tomato mark (matches the onboarding mockup). -->
+      <svg class="mark" width="76" height="76" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="66" r="42" fill="none" stroke="var(--border)" stroke-width="11" />
+        <circle
+          cx="60"
+          cy="66"
+          r="42"
+          fill="none"
+          stroke="var(--tomato)"
+          stroke-width="11"
+          stroke-linecap="round"
+          stroke-dasharray="198 66"
+          transform="rotate(-90 60 66)"
+        />
+        <line x1="60" y1="11" x2="60" y2="37" stroke="var(--leaf)" stroke-width="4.5" stroke-linecap="round" />
+        <circle cx="60" cy="24" r="8" fill="var(--leaf)" />
+      </svg>
+
+      <!-- Step 1 · the cadence -->
+      <section class="step" data-step="0">
+        <h1 class="step-title">Work in 15-minute windows.</h1>
+        <p class="step-body">
+          Tomato runs your day in short focus sprints. You commit to one window at a
+          time, then step away — no marathon sessions, no watching the clock.
+        </p>
+      </section>
+
+      <!-- Step 2 · the guilt-free break -->
+      <section class="step" data-step="1" hidden>
+        <h1 class="step-title">Breaks that actually cost nothing.</h1>
+        <p class="step-body">
+          When a sprint ends there's a short grace window to wrap up, then a real
+          break. Your agents keep working while you're away, so stopping doesn't set
+          anything back.
+        </p>
+      </section>
+
+      <!-- Step 3 · confirm durations -->
+      <section class="step" data-step="2" hidden>
+        <h1 class="step-title">Set your sprint and break.</h1>
+        <p class="step-body">
+          These are the defaults. You can change them any time from Settings.
+        </p>
+        <div class="fields">
+          <div class="field-row">
+            <label for="sprint">Sprint length</label>
+            <div class="field">
+              <input
+                id="sprint"
+                class="num"
+                type="number"
+                inputmode="decimal"
+                min="1"
+                max="60"
+                step="1"
+                aria-label="Sprint length in minutes"
+              />
+              <span class="unit">min</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <label for="break">Break length</label>
+            <div class="field">
+              <input
+                id="break"
+                class="num"
+                type="number"
+                inputmode="decimal"
+                min="0.5"
+                max="30"
+                step="0.5"
+                aria-label="Break length in minutes"
+              />
+              <span class="unit">min</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step dots -->
+      <div class="dots" id="dots" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button type="button" class="btn ghost" id="back">Back</button>
+        <button type="button" class="btn primary" id="next">Next</button>
+      </div>
+      <div class="foot-msg" id="msg" role="status" aria-live="polite"></div>
+    </div>
+
+    <script type="module" src="./onboarding.ts"></script>
+  </body>
+</html>

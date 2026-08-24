@@ -29,6 +29,8 @@ export interface TomatoConfig {
   early_grace_s: number;
   /** Boundary enforcement behavior. */
   mode: EnforcementMode;
+  /** Whether first-run onboarding has been completed. */
+  onboarded: boolean;
 }
 
 /** Spec 1 defaults: 15m sprint / 5m break / 2m grace / 5m early-grace, enforced. */
@@ -38,6 +40,7 @@ export const DEFAULT_CONFIG: TomatoConfig = {
   grace_s: 120,
   early_grace_s: 300,
   mode: "enforced",
+  onboarded: false,
 };
 
 const APP_DIR = "tomato";

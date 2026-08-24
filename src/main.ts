@@ -53,6 +53,13 @@ const STATS_LABEL = "stats";
 /** Settings window label — must match capabilities/settings-window.json. */
 const SETTINGS_LABEL = "settings";
 
+/** Onboarding window label — must match capabilities/onboarding-window.json. */
+const ONBOARDING_LABEL = "onboarding";
+
+/** Onboarding window logical size (px), per the design's first-run screen. */
+const ONBOARDING_W = 500;
+const ONBOARDING_H = 560;
+
 /** Settings window logical size (px), per the design's Settings screen. */
 const SETTINGS_W = 560;
 const SETTINGS_H = 480;
@@ -302,6 +309,38 @@ async function main(): Promise<void> {
     });
   }
 
+  // --- First-run onboarding --------------------------------------------------
+
+  // The onboarding window (null when closed). Reused/focused if already open.
+  let onboardingWindow: WebviewWindow | null = null;
+
+  /**
+   * Open the first-run onboarding window, or focus it if already open. The window
+   * persists `onboarded: true` (+ any durations the user set) and emits
+   * SETTINGS_SAVED on finish, which main already handles by reloading config.
+   */
+  async function openOnboarding(): Promise<void> {
+    if (onboardingWindow) {
+      await onboardingWindow.show().catch(() => {});
+      await onboardingWindow.setFocus().catch(() => {});
+      return;
+    }
+    const win = new WebviewWindow(ONBOARDING_LABEL, {
+      url: "src/onboarding.html",
+      title: "Tomato — welcome",
+      width: ONBOARDING_W,
+      height: ONBOARDING_H,
+      resizable: false,
+      center: true,
+      focus: true,
+    });
+    onboardingWindow = win;
+    win.once("tauri://error", (e) => console.error("onboarding window failed", e));
+    win.once("tauri://destroyed", () => {
+      onboardingWindow = null;
+    });
+  }
+
   /**
    * Apply a pending config swap, but ONLY when the machine is between sprints
    * (idle/stopped) so an in-progress sprint is never disturbed. The new
@@ -458,6 +497,13 @@ async function main(): Promise<void> {
   });
 
   await refreshIcon();
+
+  // First run only: the tray is up either way, but if the user hasn't been
+  // through onboarding yet, show it once. Finishing it persists `onboarded: true`
+  // and emits SETTINGS_SAVED (handled above), so every subsequent run skips this.
+  if (!config.onboarded) {
+    await openOnboarding().catch((err) => console.error("onboarding open failed", err));
+  }
 
   // 1 Hz loop: advance the machine, persist whatever it emitted, react, redraw.
   setInterval(() => {

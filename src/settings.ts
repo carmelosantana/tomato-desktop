@@ -54,6 +54,8 @@ let mode: EnforcementMode = DEFAULT_CONFIG.mode;
 let autostartOn = false;
 // early_grace_s is not exposed as a control; preserve whatever is stored.
 let earlyGraceS = DEFAULT_CONFIG.early_grace_s;
+// onboarded is set by first-run onboarding; preserve whatever is stored.
+let onboarded = DEFAULT_CONFIG.onboarded;
 
 // Round to at most one decimal place for a clean minutes display (e.g. 0.5).
 const toMinField = (seconds: number): string =>
@@ -96,6 +98,7 @@ async function load(): Promise<void> {
   graceEl.value = toMinField(cfg.grace_s);
   mode = cfg.mode;
   earlyGraceS = cfg.early_grace_s;
+  onboarded = cfg.onboarded;
   renderMode();
 
   // Reflect the real login-item state so the toggle matches reality on reopen.
@@ -120,6 +123,7 @@ async function save(): Promise<void> {
       grace_s: minutesToClampedSeconds(parseFloat(graceEl.value), GRACE_BOUNDS),
       early_grace_s: earlyGraceS, // preserved; not exposed as a control
       mode,
+      onboarded, // preserved; set by first-run onboarding
     };
     await saveConfig(next);
 

@@ -1,0 +1,28 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "onboarding-window",
+  "description": "Capability for the first-run onboarding window: it reads/writes config.json (fs), emits the settings-saved signal so main reloads, and closes itself.",
+  "windows": ["onboarding"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default",
+    "fs:default",
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "$CONFIG/tomato" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$CONFIG/tomato/config.json" }]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$CONFIG/tomato/config.json" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "$CONFIG/tomato/config.json" }]
+    }
+  ]
+}
