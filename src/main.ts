@@ -415,6 +415,19 @@ async function main(): Promise<void> {
     }
   }
 
+  // The static idle/break tray icons never change, so decode each once and reuse
+  // it — the 1 Hz loop would otherwise re-fetch + re-decode a PNG every tick.
+  const staticIconCache = new Map<string, Image>();
+  async function staticTrayIcon(state: "idle" | "break"): Promise<Image> {
+    const key = `${state}:${TRAY_SIZE}`;
+    const cached = staticIconCache.get(key);
+    if (cached) return cached;
+    const bytes = await (await fetch(staticIconUrl(state, TRAY_SIZE))).arrayBuffer();
+    const image = await Image.fromBytes(bytes);
+    staticIconCache.set(key, image);
+    return image;
+  }
+
   // Draw (or fetch) the icon for the current state and push it to the tray.
   async function refreshIcon(): Promise<void> {
     const snap = machine.snapshot(Date.now());
@@ -422,9 +435,7 @@ async function main(): Promise<void> {
 
     let image: Image;
     if (snap.state === "idle" || snap.state === "stopped" || snap.state === "break") {
-      const state = snap.state === "break" ? "break" : "idle";
-      const bytes = await (await fetch(staticIconUrl(state, TRAY_SIZE))).arrayBuffer();
-      image = await Image.fromBytes(bytes);
+      image = await staticTrayIcon(snap.state === "break" ? "break" : "idle");
     } else {
       const rgba = renderRing(TRAY_SIZE, v.progress, v.colorRole, theme());
       image = await Image.new(rgba, TRAY_SIZE, TRAY_SIZE);
@@ -506,12 +517,19 @@ async function main(): Promise<void> {
   }
 
   // 1 Hz loop: advance the machine, persist whatever it emitted, react, redraw.
+  // A re-entrancy guard skips a tick if the previous one's async IO (persist /
+  // window / icon work) hasn't finished, so slow IO can never overlap runs.
+  let ticking = false;
   setInterval(() => {
+    if (ticking) return;
+    ticking = true;
     void (async () => {
       try {
         await apply(machine.tick(Date.now()));
       } catch (err) {
         console.error("tomato tick failed", err);
+      } finally {
+        ticking = false;
       }
     })();
   }, 1000);

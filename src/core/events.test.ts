@@ -69,11 +69,16 @@ describe("toDomainEvents mapping", () => {
     ]);
   });
 
-  it("maps stopped → sprint_ended (actual_focus_s + over_run_s from ctx)", () => {
-    const raw: TimerEvent[] = [{ type: "stopped", at: 960_000 }];
+  it("maps sprint-ended → sprint_ended (actual_focus_s + over_run_s from ctx)", () => {
+    const raw: TimerEvent[] = [{ type: "sprint-ended", at: 960_000 }];
     expect(toDomainEvents(raw, { ...ctx, actualFocusS: 960, overRunS: 60 })).toEqual<DomainEvent[]>([
       { event: "sprint_ended", ts: 960, sprint_id: "S1", actual_focus_s: 960, over_run_s: 60 },
     ]);
+  });
+
+  it("drops stopped (UI-only lifecycle signal; the sprint close rides on sprint-ended)", () => {
+    const raw: TimerEvent[] = [{ type: "stopped", at: 960_000 }];
+    expect(toDomainEvents(raw, ctx)).toEqual([]);
   });
 
   it("drops nudge (UI-only; no domain event in the Spec 1 vocabulary)", () => {
@@ -93,7 +98,7 @@ describe("toDomainEvents mapping", () => {
   });
 
   it("defaults derived numeric fields to 0 when the ctx omits them", () => {
-    const raw: TimerEvent[] = [{ type: "stopped", at: 900_000 }];
+    const raw: TimerEvent[] = [{ type: "sprint-ended", at: 900_000 }];
     expect(toDomainEvents(raw, ctx)).toEqual<DomainEvent[]>([
       { event: "sprint_ended", ts: 900, sprint_id: "S1", actual_focus_s: 0, over_run_s: 0 },
     ]);

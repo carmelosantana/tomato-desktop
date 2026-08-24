@@ -191,7 +191,8 @@ body {
   background: var(--break);
 }
 .legend-row .swatch.skipped {
-  /* Color-blind safe: skipped also carries a diagonal-hatch glyph via ✕ label. */
+  /* Color-blind safe: the skipped slice is disambiguated by its ✕ label, not by
+     color alone (the swatch is a plain fill — there is no hatch pattern). */
   background: var(--chart-5);
 }
 .legend-row b {

@@ -12,7 +12,6 @@
     "core:window:default",
     "core:webview:default",
     "notification:default",
-    "opener:default",
     "fs:default",
     {
       "identifier": "fs:allow-mkdir",

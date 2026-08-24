@@ -11,14 +11,14 @@ describe("TimerMachine (enforced)", () => {
     expect(t.snapshot(cfg.sprintMs).state).toBe("grace");
     // early grace (5m) not yet elapsed at 2m:
     expect(t.tick(cfg.sprintMs + 120_000)).toEqual([]);
-    // elapses at 5m → break:
-    expect(types(t.tick(cfg.sprintMs + cfg.earlyGraceMs))).toEqual(["grace-ended","break-started"]);
+    // elapses at 5m → sprint ends, then break:
+    expect(types(t.tick(cfg.sprintMs + cfg.earlyGraceMs))).toEqual(["grace-ended","sprint-ended","break-started"]);
   });
 
   it("breakNow ends grace early", () => {
     const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs);
     const es = t.breakNow(cfg.sprintMs + 10_000);
-    expect(types(es)).toEqual(["grace-ended","break-started"]);
+    expect(types(es)).toEqual(["grace-ended","sprint-ended","break-started"]);
   });
 
   it("break elapse returns to idle without auto-chaining", () => {
@@ -75,7 +75,7 @@ describe("TimerMachine transition coverage (paths the event mapper consumes)", (
   it("skipBreak from grace returns to idle and counts the streak", () => {
     const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs); // → grace
     const es = t.skipBreak(cfg.sprintMs + 1_000);
-    expect(types(es)).toEqual(["grace-ended","break-skipped"]);
+    expect(types(es)).toEqual(["grace-ended","sprint-ended","break-skipped"]);
     const graceEnded = es.find(e => e.type === "grace-ended");
     expect(graceEnded && "ended_by" in graceEnded && graceEnded.ended_by).toBe("user");
     expect(t.snapshot(cfg.sprintMs + 1_000).state).toBe("idle");
@@ -85,7 +85,7 @@ describe("TimerMachine transition coverage (paths the event mapper consumes)", (
   it("stop from focus flushes then emits stopped and resets the streak", () => {
     const t = new TimerMachine(cfg); t.start(0);
     const es = t.stop(60_000);
-    expect(types(es)).toEqual(["stopped"]);
+    expect(types(es)).toEqual(["sprint-ended","stopped"]);
     expect(t.snapshot(60_000).state).toBe("stopped");
     expect(t.snapshot(60_000).streakIndex).toBe(0);
   });
@@ -93,21 +93,68 @@ describe("TimerMachine transition coverage (paths the event mapper consumes)", (
   it("beginBreak (soft manual break) from focus goes straight to break", () => {
     const t = new TimerMachine({ ...cfg, mode: "soft" }); t.start(0);
     const es = t.beginBreak(60_000);
-    expect(types(es)).toEqual(["break-started"]);
+    expect(types(es)).toEqual(["sprint-ended","break-started"]);
     expect(t.snapshot(60_000).state).toBe("break");
   });
 
   it("beginBreak from grace closes grace before the break (symmetry fix)", () => {
     const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs); // → grace
     const es = t.beginBreak(cfg.sprintMs + 1_000);
-    expect(types(es)).toEqual(["grace-ended","break-started"]);
+    expect(types(es)).toEqual(["grace-ended","sprint-ended","break-started"]);
     expect(t.snapshot(cfg.sprintMs + 1_000).state).toBe("break");
   });
 
   it("breakNow from focus reaches the boundary before the break (symmetry fix)", () => {
     const t = new TimerMachine(cfg); t.start(0);
     const es = t.breakNow(60_000);
-    expect(types(es)).toEqual(["boundary-reached","break-started"]);
+    expect(types(es)).toEqual(["boundary-reached","sprint-ended","break-started"]);
     expect(t.snapshot(60_000).state).toBe("break");
+  });
+});
+
+describe("TimerMachine sprint_ended emission at focus-end (FIX 1)", () => {
+  const count = (es: {type:string}[], type: string) => es.filter(e => e.type === type).length;
+
+  it("emits sprint-ended once at the enforced focus→break transition with the right over-run", () => {
+    const t = new TimerMachine(cfg);
+    t.start(0);
+    t.tick(cfg.sprintMs);                              // → grace
+    const es = t.tick(cfg.sprintMs + cfg.earlyGraceMs); // grace elapses → break
+    expect(types(es)).toEqual(["grace-ended","sprint-ended","break-started"]);
+    // Focus ran the full sprint + all of early grace, so over-run == earlyGraceMs.
+    expect(t.snapshot(cfg.sprintMs + cfg.earlyGraceMs).overRunMs).toBe(cfg.earlyGraceMs);
+  });
+
+  it("does NOT re-emit sprint-ended on a stop() during the break", () => {
+    const t = new TimerMachine(cfg);
+    t.start(0);
+    t.tick(cfg.sprintMs);
+    t.tick(cfg.sprintMs + cfg.earlyGraceMs);           // sprint-ended already fired
+    const stopEs = t.stop(cfg.sprintMs + cfg.earlyGraceMs + 10_000);
+    expect(count(stopEs, "sprint-ended")).toBe(0);
+    expect(types(stopEs)).toContain("stopped");
+  });
+
+  it("breakNow emits sprint-ended exactly once (guarded against a later stop)", () => {
+    const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs);
+    const es = t.breakNow(cfg.sprintMs + 10_000);
+    expect(count(es, "sprint-ended")).toBe(1);
+    const stopEs = t.stop(cfg.sprintMs + 20_000);
+    expect(count(stopEs, "sprint-ended")).toBe(0);
+  });
+
+  it("beginBreak (soft) emits sprint-ended exactly once", () => {
+    const t = new TimerMachine({ ...cfg, mode: "soft" }); t.start(0);
+    const es = t.beginBreak(60_000);
+    expect(count(es, "sprint-ended")).toBe(1);
+    const stopEs = t.stop(120_000);
+    expect(count(stopEs, "sprint-ended")).toBe(0);
+  });
+
+  it("stop() from focus before any break still emits sprint-ended once", () => {
+    const t = new TimerMachine(cfg); t.start(0);
+    const es = t.stop(60_000);
+    expect(count(es, "sprint-ended")).toBe(1);
+    expect(types(es)).toEqual(["sprint-ended","stopped"]);
   });
 });

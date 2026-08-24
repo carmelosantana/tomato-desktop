@@ -102,8 +102,13 @@ export function toDomainEvents(raw: TimerEvent[], ctx: MapContext): DomainEvent[
         out.push(skipped);
         break;
       }
-      case "stopped":
+      case "sprint-ended":
         out.push({ event: "sprint_ended", ts, sprint_id, actual_focus_s: ctx.actualFocusS ?? 0, over_run_s: ctx.overRunS ?? 0 });
+        break;
+      case "stopped":
+        // UI-only lifecycle signal (closes boundary windows). The sprint's close
+        // rides on the separate `sprint-ended` emitted at focus-end, so `stopped`
+        // maps to no Spec 1 domain event.
         break;
       case "nudge":
         // UI-only boundary hint; no Spec 1 domain event.

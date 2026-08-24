@@ -94,6 +94,28 @@ describe("aggregate — week", () => {
   });
 });
 
+describe("aggregate — enforced cycle without a manual Stop (FIX 1 regression lock)", () => {
+  // The event stream a normal enforced cycle now produces: sprint_ended is
+  // emitted at the focus→break transition, BEFORE break_started — never a Stop.
+  const cycle: DomainEvent[] = [
+    { event: "sprint_started", ts: t(100), sprint_id: "C1", planned_s: 900, enforcement_mode: "enforced" },
+    { event: "boundary_reached", ts: t(1000), sprint_id: "C1" },
+    { event: "grace_started", ts: t(1000), sprint_id: "C1", grace_s: 300, streak_index: 0 },
+    { event: "grace_ended", ts: t(1300), sprint_id: "C1", actual_grace_s: 300, ended_by: "timeout" },
+    { event: "sprint_ended", ts: t(1300), sprint_id: "C1", actual_focus_s: 1200, over_run_s: 300 },
+    { event: "break_started", ts: t(1300), sprint_id: "C1", break_id: "CB1", planned_s: 300 },
+    { event: "break_completed", ts: t(1600), sprint_id: "C1", break_id: "CB1", actual_s: 300 },
+  ];
+
+  it("draws the sprint timeline bar and sums the over-run tile", () => {
+    const { today } = aggregate(cycle, opts);
+    expect(today.timeline).toContainEqual({ kind: "sprint", startS: t(100), endS: t(1300) });
+    expect(today.timeline).toContainEqual({ kind: "break", startS: t(1300), endS: t(1600) });
+    expect(today.overRunS).toBeGreaterThan(0);
+    expect(today.overRunS).toBe(300);
+  });
+});
+
 describe("aggregate — empty log", () => {
   it("yields all zeros, empty timeline, and a zeroed week", () => {
     const { today, streak, week } = aggregate([], opts);

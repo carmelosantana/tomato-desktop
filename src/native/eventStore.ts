@@ -18,9 +18,15 @@ import { serializeEvent, parseEvents } from "../core/jsonl";
 const APP_DIR = "tomato";
 const EVENTS_FILE = "events.jsonl";
 
+/** Absolute path to Tomato's XDG data subdir (no side effects). Single source of
+ *  the data-dir join used by both the writer and the reader below. */
+async function appDataDir(): Promise<string> {
+  return join(await dataDir(), APP_DIR);
+}
+
 /** Absolute path to the events log, ensuring its parent directory exists. */
 async function eventsPath(): Promise<string> {
-  const dir = await join(await dataDir(), APP_DIR);
+  const dir = await appDataDir();
   await mkdir(dir, { recursive: true });
   return join(dir, EVENTS_FILE);
 }
@@ -39,8 +45,7 @@ export const jsonlEventStore: EventSink & {
   },
 
   async readAllEvents(): Promise<DomainEvent[]> {
-    const dir = await join(await dataDir(), APP_DIR);
-    const path = await join(dir, EVENTS_FILE);
+    const path = await join(await appDataDir(), EVENTS_FILE);
     if (!(await exists(path))) return [];
     return parseEvents(await readTextFile(path));
   },

@@ -9,6 +9,10 @@ export function decideNudge(dnd: DndState): NudgeKind {
       return "notification";
     case "unknown":
       return "card-quiet";
+    default: {
+      const _exhaustive: never = dnd;
+      return _exhaustive;
+    }
   }
 }
 

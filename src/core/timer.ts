@@ -34,6 +34,7 @@ export type TimerEvent =
   | { type: "break-completed"; at: number }
   | { type: "break-skipped"; at: number }
   | { type: "nudge"; at: number }
+  | { type: "sprint-ended"; at: number }
   | { type: "stopped"; at: number };
 
 export class TimerMachine {
@@ -51,6 +52,12 @@ export class TimerMachine {
   // Guards single boundary emission per sprint (matters in soft mode, where we
   // stay in focus and would otherwise re-emit the nudge every tick past boundary).
   private boundaryEmitted = false;
+
+  // Guards single sprint_ended emission per sprint. A sprint = one focus period,
+  // so sprint_ended is emitted EXACTLY ONCE — at the moment focus ends (the
+  // focus→break transition, a skip, or a stop before any break). Once a break has
+  // begun this flag is set, so a later stop() during the break can't re-emit it.
+  private sprintEndedEmitted = false;
 
   constructor(config: TimerConfig) {
     this.config = config;
@@ -96,7 +103,20 @@ export class TimerMachine {
     this.breakElapsedMs = 0;
     this.activeFocusMs = 0;
     this.boundaryEmitted = false;
+    this.sprintEndedEmitted = false;
     return [{ type: "focus-started", at: now }];
+  }
+
+  /**
+   * Push the single `sprint-ended` for the current focus period, at most once.
+   * The numeric fields (actual_focus_s / over_run_s) are derived by the caller
+   * from the post-action snapshot — the same activeFocusMs/overRunMs that stop()
+   * already reports — so the mapper stays pure and this event stays a marker.
+   */
+  private emitSprintEnded(events: TimerEvent[], now: number): void {
+    if (this.sprintEndedEmitted) return;
+    this.sprintEndedEmitted = true;
+    events.push({ type: "sprint-ended", at: now });
   }
 
   /** Advance the machine to `now`, emitting any boundary/transition events crossed. */
@@ -147,6 +167,7 @@ export class TimerMachine {
         this.state = "break";
         this.breakElapsedMs = 0;
         events.push({ type: "grace-ended", at: now, ended_by: "timeout" });
+        this.emitSprintEnded(events, now);
         events.push({ type: "break-started", at: now });
       }
     }
@@ -176,6 +197,7 @@ export class TimerMachine {
       this.state = "break";
       this.breakElapsedMs = 0;
       events.push({ type: "grace-ended", at: now, ended_by: "user" });
+      this.emitSprintEnded(events, now);
       events.push({ type: "break-started", at: now });
     } else if (this.state === "focus") {
       // No grace was in play; close the boundary before the break so the stream
@@ -184,6 +206,7 @@ export class TimerMachine {
       this.breakElapsedMs = 0;
       this.boundaryEmitted = true;
       events.push({ type: "boundary-reached", at: now });
+      this.emitSprintEnded(events, now);
       events.push({ type: "break-started", at: now });
     }
     return events;
@@ -197,10 +220,12 @@ export class TimerMachine {
       this.state = "break";
       this.breakElapsedMs = 0;
       events.push({ type: "grace-ended", at: now, ended_by: "user" });
+      this.emitSprintEnded(events, now);
       events.push({ type: "break-started", at: now });
     } else if (this.state === "focus") {
       this.state = "break";
       this.breakElapsedMs = 0;
+      this.emitSprintEnded(events, now);
       events.push({ type: "break-started", at: now });
     }
     return events;
@@ -214,6 +239,9 @@ export class TimerMachine {
       if (this.state === "grace") {
         events.push({ type: "grace-ended", at: now, ended_by: "user" });
       }
+      // The focus period ends here too — close it (guarded, so a skip issued
+      // during an already-started break doesn't re-emit).
+      this.emitSprintEnded(events, now);
       this.state = "idle";
       this.streakIndex += 1;
       events.push({ type: "break-skipped", at: now });
@@ -230,6 +258,9 @@ export class TimerMachine {
       return [{ type: "stopped", at: now }];
     }
     const events = this.tick(now);
+    // Close the focus period on stop — but only if a break hasn't already closed
+    // it this sprint (the guard makes a stop DURING a break a no-op for this).
+    this.emitSprintEnded(events, now);
     this.state = "stopped";
     this.streakIndex = 0;
     events.push({ type: "stopped", at: now });
