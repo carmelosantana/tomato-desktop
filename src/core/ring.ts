@@ -78,8 +78,10 @@ export function ringProgress(elapsedMs: number, totalMs: number): number {
  * Precedence:
  *  - break            → ◼ (fallback colorRole "focus"; the ring group has no
  *                          break progress colour, so break reuses the base role)
- *  - over-run (>1)    → ▲ / overrun  (soft mode carrying focus past the boundary)
- *  - grace            → ◑ / grace    (state === "grace" or graceActive flag)
+ *  - grace            → ◑ / grace    (state === "grace" or graceActive flag;
+ *                          grace is expected overtime, so it wins over over-run
+ *                          even though elapsed > total during the grace window)
+ *  - over-run (>1)    → ▲ / overrun  (focus carried past the boundary in soft mode)
  *  - focus            → ● / focus
  *  - idle | stopped   → ● / focus    (resting default)
  */
@@ -96,13 +98,15 @@ export function ringVisual(
     return { progress, colorRole: "focus", glyph: "◼" };
   }
 
+  // Grace is expected overtime: it must read amber ◑ regardless of ratio > 1,
+  // so it is decided before the over-run check.
+  if (state === "grace" || graceActive) {
+    return { progress, colorRole: "grace", glyph: "◑" };
+  }
+
   // Over-run: focus carried past the boundary (soft mode) shows the overrun cue.
   if (rawRatio > 1) {
     return { progress, colorRole: "overrun", glyph: "▲" };
-  }
-
-  if (state === "grace" || graceActive) {
-    return { progress, colorRole: "grace", glyph: "◑" };
   }
 
   // focus, idle, stopped → resting/active focus dot.

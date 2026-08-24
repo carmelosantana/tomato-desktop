@@ -52,6 +52,14 @@ describe("ringVisual state → colorRole + glyph mapping", () => {
     expect(v.progress).toBe(1);
   });
 
+  it("grace beats over-run: grace + elapsed > total → ◑ / grace", () => {
+    const sprintMs = 1000;
+    const v = ringVisual("grace", sprintMs + 60_000, sprintMs, true);
+    expect(v.colorRole).toBe("grace");
+    expect(v.glyph).toBe("◑");
+    expect(v.progress).toBe(1);
+  });
+
   it("idle/stopped → resting ● / focus", () => {
     expect(ringVisual("idle", 0, 1000, false).glyph).toBe("●");
     expect(ringVisual("stopped", 0, 1000, false).glyph).toBe("●");
