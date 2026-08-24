@@ -55,4 +55,15 @@ describe("parseEvents", () => {
   it("returns [] for whitespace-only input", () => {
     expect(parseEvents("\n\n  \n")).toEqual([]);
   });
+
+  it("skips a malformed line and returns the valid events without throwing", () => {
+    // Append-only log torn mid-write: a partial line between two valid records.
+    const text = [
+      serializeEvent(sprintStarted),
+      '{"event":"boundary_reached","ts":900,"sprint',
+      serializeEvent(ended),
+    ].join("\n");
+    expect(() => parseEvents(text)).not.toThrow();
+    expect(parseEvents(text)).toEqual([sprintStarted, ended]);
+  });
 });

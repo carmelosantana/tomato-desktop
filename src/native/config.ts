@@ -57,8 +57,13 @@ async function configPath(ensureDir: boolean): Promise<string> {
 export async function loadConfig(): Promise<TomatoConfig> {
   const path = await configPath(false);
   if (!(await exists(path))) return { ...DEFAULT_CONFIG };
-  const raw = JSON.parse(await readTextFile(path)) as Partial<TomatoConfig>;
-  return { ...DEFAULT_CONFIG, ...raw };
+  try {
+    const raw = JSON.parse(await readTextFile(path)) as Partial<TomatoConfig>;
+    return { ...DEFAULT_CONFIG, ...raw };
+  } catch {
+    // Corrupt or unreadable config.json — fall back to defaults, same as absent.
+    return { ...DEFAULT_CONFIG };
+  }
 }
 
 /** Persist config as pretty-printed JSON (human-readable), creating the dir. */

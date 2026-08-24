@@ -17,11 +17,22 @@ export function serializeEvent(e: DomainEvent): string {
 /**
  * Parse JSONL text back into events: one object per line. Tolerant of a trailing
  * newline, interior blank / whitespace-only lines, and empty input (→ []).
+ *
+ * Also tolerant of a malformed line: the event log is append-only, so a crash
+ * mid-append can leave a torn/partial final line. An unparseable line is SKIPPED
+ * (dropped) rather than throwing, so the valid events still return. Dropping torn
+ * lines is correct for an append-only log; we do not attempt recovery.
  */
 export function parseEvents(text: string): DomainEvent[] {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line) as DomainEvent);
+  const events: DomainEvent[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (line.length === 0) continue;
+    try {
+      events.push(JSON.parse(line) as DomainEvent);
+    } catch {
+      // Torn/partial line from an interrupted append — skip it.
+    }
+  }
+  return events;
 }
