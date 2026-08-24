@@ -61,6 +61,16 @@ export class TimerMachine {
     return this.streakIndex === 0 ? this.config.earlyGraceMs : this.config.graceMs;
   }
 
+  /**
+   * Reset the streak to its cold start (streakIndex 0) WITHOUT emitting events or
+   * changing state. Callers use this before a fresh start() after a long real gap
+   * so the next sprint gets EARLY grace again (Task 3 cold-idle reset). Pure and
+   * additive — the transition logic is untouched.
+   */
+  resetStreak(): void {
+    this.streakIndex = 0;
+  }
+
   /** idle/stopped → focus. streakIndex is preserved across a streak (reset on stop/cold idle). */
   start(now: number): TimerEvent[] {
     if (this.state !== "idle" && this.state !== "stopped") return [];
