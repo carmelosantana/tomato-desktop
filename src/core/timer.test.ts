@@ -1,0 +1,47 @@
+import { describe, it, expect } from "vitest";
+import { TimerMachine } from "./timer";
+const cfg = { sprintMs: 900_000, breakMs: 300_000, graceMs: 120_000, earlyGraceMs: 300_000, mode: "enforced" as const };
+const types = (es: {type:string}[]) => es.map(e => e.type);
+
+describe("TimerMachine (enforced)", () => {
+  it("uses early grace on the first sprint, normal grace after", () => {
+    const t = new TimerMachine(cfg);
+    t.start(0);
+    expect(types(t.tick(cfg.sprintMs))).toEqual(["boundary-reached","grace-started"]);
+    expect(t.snapshot(cfg.sprintMs).state).toBe("grace");
+    // early grace (5m) not yet elapsed at 2m:
+    expect(t.tick(cfg.sprintMs + 120_000)).toEqual([]);
+    // elapses at 5m → break:
+    expect(types(t.tick(cfg.sprintMs + cfg.earlyGraceMs))).toEqual(["grace-ended","break-started"]);
+  });
+
+  it("breakNow ends grace early", () => {
+    const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs);
+    const es = t.breakNow(cfg.sprintMs + 10_000);
+    expect(types(es)).toEqual(["grace-ended","break-started"]);
+  });
+
+  it("break elapse returns to idle without auto-chaining", () => {
+    const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs);
+    t.tick(cfg.sprintMs + cfg.earlyGraceMs); // break started
+    const es = t.tick(cfg.sprintMs + cfg.earlyGraceMs + cfg.breakMs);
+    expect(types(es)).toContain("break-completed");
+    expect(t.snapshot(cfg.sprintMs + cfg.earlyGraceMs + cfg.breakMs).state).toBe("idle");
+  });
+
+  it("accrues activeFocusMs in focus+grace, not break; tracks overRun", () => {
+    const t = new TimerMachine(cfg); t.start(0);
+    t.tick(cfg.sprintMs + 60_000);         // 60s into grace
+    const snap = t.snapshot(cfg.sprintMs + 60_000);
+    expect(snap.activeFocusMs).toBe(cfg.sprintMs + 60_000);
+    expect(snap.overRunMs).toBe(60_000);
+  });
+});
+
+describe("TimerMachine (soft)", () => {
+  it("nudges at boundary and stays in focus", () => {
+    const t = new TimerMachine({ ...cfg, mode: "soft" }); t.start(0);
+    expect(types(t.tick(cfg.sprintMs))).toEqual(["boundary-reached","nudge"]);
+    expect(t.snapshot(cfg.sprintMs).state).toBe("focus");
+  });
+});
