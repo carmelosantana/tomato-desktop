@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "boundary-windows",
+  "description": "Capability for the grace toast and break card webview windows: they only listen for countdown updates and emit button events.",
+  "windows": ["grace-toast", "break-card"],
+  "permissions": ["core:event:default"]
+}
