@@ -45,3 +45,42 @@ describe("TimerMachine (soft)", () => {
     expect(t.snapshot(cfg.sprintMs).state).toBe("focus");
   });
 });
+
+describe("TimerMachine transition coverage (paths the event mapper consumes)", () => {
+  it("skipBreak from grace returns to idle and counts the streak", () => {
+    const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs); // → grace
+    const es = t.skipBreak(cfg.sprintMs + 1_000);
+    expect(types(es)).toEqual(["break-skipped"]);
+    expect(t.snapshot(cfg.sprintMs + 1_000).state).toBe("idle");
+    expect(t.snapshot(cfg.sprintMs + 1_000).streakIndex).toBe(1);
+  });
+
+  it("stop from focus flushes then emits stopped and resets the streak", () => {
+    const t = new TimerMachine(cfg); t.start(0);
+    const es = t.stop(60_000);
+    expect(types(es)).toEqual(["stopped"]);
+    expect(t.snapshot(60_000).state).toBe("stopped");
+    expect(t.snapshot(60_000).streakIndex).toBe(0);
+  });
+
+  it("beginBreak (soft manual break) from focus goes straight to break", () => {
+    const t = new TimerMachine({ ...cfg, mode: "soft" }); t.start(0);
+    const es = t.beginBreak(60_000);
+    expect(types(es)).toEqual(["break-started"]);
+    expect(t.snapshot(60_000).state).toBe("break");
+  });
+
+  it("beginBreak from grace closes grace before the break (symmetry fix)", () => {
+    const t = new TimerMachine(cfg); t.start(0); t.tick(cfg.sprintMs); // → grace
+    const es = t.beginBreak(cfg.sprintMs + 1_000);
+    expect(types(es)).toEqual(["grace-ended","break-started"]);
+    expect(t.snapshot(cfg.sprintMs + 1_000).state).toBe("break");
+  });
+
+  it("breakNow from focus reaches the boundary before the break (symmetry fix)", () => {
+    const t = new TimerMachine(cfg); t.start(0);
+    const es = t.breakNow(60_000);
+    expect(types(es)).toEqual(["boundary-reached","break-started"]);
+    expect(t.snapshot(60_000).state).toBe("break");
+  });
+});

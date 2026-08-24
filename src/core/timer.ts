@@ -153,10 +153,12 @@ export class TimerMachine {
       events.push({ type: "grace-ended", at: now, ended_by: "user" });
       events.push({ type: "break-started", at: now });
     } else if (this.state === "focus") {
-      // No grace was in play; go straight to the break.
+      // No grace was in play; close the boundary before the break so the stream
+      // stays symmetric (a break is always preceded by boundary-reached).
       this.state = "break";
       this.breakElapsedMs = 0;
       this.boundaryEmitted = true;
+      events.push({ type: "boundary-reached", at: now });
       events.push({ type: "break-started", at: now });
     }
     return events;
@@ -165,7 +167,13 @@ export class TimerMachine {
   /** Soft-mode manual break: leave focus and begin the break. */
   beginBreak(now: number): TimerEvent[] {
     const events = this.tick(now);
-    if (this.state === "focus" || this.state === "grace") {
+    if (this.state === "grace") {
+      // Exiting grace: close it with grace-ended before break-started (symmetry).
+      this.state = "break";
+      this.breakElapsedMs = 0;
+      events.push({ type: "grace-ended", at: now, ended_by: "user" });
+      events.push({ type: "break-started", at: now });
+    } else if (this.state === "focus") {
       this.state = "break";
       this.breakElapsedMs = 0;
       events.push({ type: "break-started", at: now });
