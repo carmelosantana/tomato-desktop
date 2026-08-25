@@ -26,6 +26,14 @@ fn dnd_state() -> String {
     }
 }
 
+/// Quit the whole app. The tray "Quit" menu item invokes this so quitting is
+/// reliable across platforms (the predefined Quit item does not exit on every
+/// Linux tray), and because the main window is hidden there is no window to close.
+#[tauri::command]
+fn quit(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -37,7 +45,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        .invoke_handler(tauri::generate_handler![dnd_state])
+        .invoke_handler(tauri::generate_handler![dnd_state, quit])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

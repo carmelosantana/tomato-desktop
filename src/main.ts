@@ -8,7 +8,8 @@
 // toast / break card webview windows (or an OS notification when appropriate).
 
 import { TrayIcon } from "@tauri-apps/api/tray";
-import { Menu } from "@tauri-apps/api/menu";
+import { Menu, MenuItem, PredefinedMenuItem } from "@tauri-apps/api/menu";
+import { invoke } from "@tauri-apps/api/core";
 import { Image } from "@tauri-apps/api/image";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emit, listen } from "@tauri-apps/api/event";
@@ -106,6 +107,10 @@ async function main(): Promise<void> {
   // Open boundary windows (null when closed). Only ever one of each.
   let graceToast: WebviewWindow | null = null;
   let breakCard: WebviewWindow | null = null;
+
+  // Tray Start/Stop items, held so they can be enabled/disabled by state.
+  let startItem: MenuItem | null = null;
+  let stopItem: MenuItem | null = null;
 
   // Wall-clock ts (seconds) of the last persisted event, seeded from the log so
   // cold-idle detection survives an app restart.
@@ -443,13 +448,28 @@ async function main(): Promise<void> {
     await tray.setIcon(image);
   }
 
+  // Enable Start only when between sprints (idle/stopped) and Stop only when a
+  // sprint is running — clearer than two always-active items. Only touches the
+  // menu when the running/idle distinction actually flips (not every 1 Hz tick).
+  let menuRunning: boolean | null = null;
+  async function syncMenu(): Promise<void> {
+    if (!startItem || !stopItem) return;
+    const s = machine.currentState();
+    const running = s === "focus" || s === "grace" || s === "break";
+    if (running === menuRunning) return;
+    menuRunning = running;
+    await startItem.setEnabled(!running).catch(() => {});
+    await stopItem.setEnabled(running).catch(() => {});
+  }
+
   // Single pipeline for every batch of raw events: persist → react → redraw →
-  // refresh the open window's countdown.
+  // refresh the open window's countdown → reflect state in the tray menu.
   async function apply(raw: TimerEvent[]): Promise<void> {
     await persist(raw);
     await react(raw);
     await refreshIcon();
     await pushBoundaryUpdates();
+    await syncMenu();
   }
 
   async function onStart(): Promise<void> {
@@ -480,17 +500,23 @@ async function main(): Promise<void> {
     );
   });
 
+  // Build items as instances so Start/Stop can be toggled by state. Quit invokes
+  // the Rust `quit` command (reliable exit on every platform; the predefined
+  // Quit item does not exit on some Linux trays).
+  startItem = await MenuItem.new({ id: "start", text: "Start", action: () => void onStart() });
+  stopItem = await MenuItem.new({ id: "stop", text: "Stop", enabled: false, action: () => void onStop() });
   const menu = await Menu.new({
     items: [
-      { id: "start", text: "Start", action: () => void onStart() },
-      { id: "stop", text: "Stop", action: () => void onStop() },
-      { item: "Separator" },
-      { id: "stats", text: "Stats…", action: () => void openStats() },
-      { id: "settings", text: "Settings…", action: () => void openSettings() },
-      { item: "Separator" },
-      { item: "Quit", text: "Quit" },
+      startItem,
+      stopItem,
+      await PredefinedMenuItem.new({ item: "Separator" }),
+      await MenuItem.new({ id: "stats", text: "Stats…", action: () => void openStats() }),
+      await MenuItem.new({ id: "settings", text: "Settings…", action: () => void openSettings() }),
+      await PredefinedMenuItem.new({ item: "Separator" }),
+      await MenuItem.new({ id: "quit", text: "Quit", action: () => void invoke("quit") }),
     ],
   });
+  await syncMenu();
 
   const tray = await TrayIcon.new({
     id: "tomato",
