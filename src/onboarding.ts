@@ -130,22 +130,40 @@ async function load(): Promise<void> {
 async function finish(): Promise<void> {
   nextEl.disabled = true;
   msgEl.textContent = "";
+  const next: TomatoConfig = {
+    sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
+    break_s: minutesToClampedSeconds(parseFloat(breakEl.value), BREAK_BOUNDS),
+    grace_s: graceS, // preserved; not exposed here
+    early_grace_s: earlyGraceS, // preserved; not exposed here
+    mode, // preserved; not exposed here
+    onboarded: true,
+  };
+
+  // Step 1 — the actual persist. Only this failing means the settings weren't
+  // saved, so only this shows the "couldn't save" message and stops.
   try {
-    const next: TomatoConfig = {
-      sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
-      break_s: minutesToClampedSeconds(parseFloat(breakEl.value), BREAK_BOUNDS),
-      grace_s: graceS, // preserved; not exposed here
-      early_grace_s: earlyGraceS, // preserved; not exposed here
-      mode, // preserved; not exposed here
-      onboarded: true,
-    };
     await saveConfig(next);
-    // Tell main to re-read config (durations apply on the NEXT sprint).
+  } catch (err) {
+    console.error("onboarding: saveConfig failed", err);
+    msgEl.textContent = `Couldn't save (write): ${err}`;
+    nextEl.disabled = false;
+    return;
+  }
+
+  // Step 2 — tell main to reload. Non-fatal: the config is already on disk and
+  // main also re-reads on its next start, so a failure here shouldn't block.
+  try {
     await emit(SETTINGS_SAVED);
+  } catch (err) {
+    console.error("onboarding: emit(SETTINGS_SAVED) failed", err);
+  }
+
+  // Step 3 — close to the tray. If this fails the save still succeeded, so say so.
+  try {
     await getCurrentWindow().close();
   } catch (err) {
-    console.error("onboarding: finish failed", err);
-    msgEl.textContent = "Couldn't save. Please try again.";
+    console.error("onboarding: window close failed", err);
+    msgEl.textContent = `Saved — but couldn't close: ${err}`;
     nextEl.disabled = false;
   }
 }

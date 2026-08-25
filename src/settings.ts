@@ -125,33 +125,48 @@ async function load(): Promise<void> {
 async function save(): Promise<void> {
   saveEl.disabled = true;
   msgEl.textContent = "";
+  // Clamp minutes → persist-ready seconds within the Spec 1 bounds.
+  const next: TomatoConfig = {
+    sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
+    break_s: minutesToClampedSeconds(parseFloat(breakEl.value), BREAK_BOUNDS),
+    grace_s: minutesToClampedSeconds(parseFloat(graceEl.value), GRACE_BOUNDS),
+    early_grace_s: earlyGraceS, // preserved; not exposed as a control
+    mode,
+    onboarded, // preserved; set by first-run onboarding
+  };
+
+  // Step 1 — the actual persist. Only this failing means settings weren't saved.
   try {
-    // Clamp minutes → persist-ready seconds within the Spec 1 bounds.
-    const next: TomatoConfig = {
-      sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
-      break_s: minutesToClampedSeconds(parseFloat(breakEl.value), BREAK_BOUNDS),
-      grace_s: minutesToClampedSeconds(parseFloat(graceEl.value), GRACE_BOUNDS),
-      early_grace_s: earlyGraceS, // preserved; not exposed as a control
-      mode,
-      onboarded, // preserved; set by first-run onboarding
-    };
     await saveConfig(next);
+  } catch (err) {
+    console.error("settings: saveConfig failed", err);
+    msgEl.textContent = `Couldn't save (write): ${err}`;
+    saveEl.disabled = false;
+    return;
+  }
 
-    // Apply the autostart choice, then confirm the effective state so the login
-    // entry and the persisted config never drift apart.
-    try {
-      if (autostartOn) await enable();
-      else await disable();
-    } catch (err) {
-      console.error("settings: autostart toggle failed", err);
-    }
+  // Step 2 — apply the autostart choice, then confirm the effective state so the
+  // login entry and the persisted config never drift apart. Non-fatal.
+  try {
+    if (autostartOn) await enable();
+    else await disable();
+  } catch (err) {
+    console.error("settings: autostart toggle failed", err);
+  }
 
-    // Tell main to re-read config (durations/mode apply on the NEXT sprint).
+  // Step 3 — tell main to reload. Non-fatal (config is on disk already).
+  try {
     await emit(SETTINGS_SAVED);
+  } catch (err) {
+    console.error("settings: emit(SETTINGS_SAVED) failed", err);
+  }
+
+  // Step 4 — close. If this fails the save still succeeded, so say so.
+  try {
     await getCurrentWindow().close();
   } catch (err) {
-    console.error("settings: save failed", err);
-    msgEl.textContent = "Couldn't save settings.";
+    console.error("settings: window close failed", err);
+    msgEl.textContent = `Saved — but couldn't close: ${err}`;
     saveEl.disabled = false;
   }
 }
