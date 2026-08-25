@@ -4,6 +4,7 @@ import {
   minutesToSeconds,
   secondsToMinutes,
   minutesToClampedSeconds,
+  sanitizeNumericField,
   SPRINT_BOUNDS,
   BREAK_BOUNDS,
   GRACE_BOUNDS,
@@ -66,5 +67,27 @@ describe("minutesToClampedSeconds", () => {
   it("empty/NaN field falls to the lower bound", () => {
     expect(minutesToClampedSeconds(NaN, SPRINT_BOUNDS)).toBe(60);
     expect(minutesToClampedSeconds(NaN, GRACE_BOUNDS)).toBe(0);
+  });
+});
+
+describe("sanitizeNumericField", () => {
+  it("passes plain digits through", () => {
+    expect(sanitizeNumericField("15")).toBe("15");
+  });
+  it("keeps a single decimal point", () => {
+    expect(sanitizeNumericField("0.5")).toBe("0.5");
+  });
+  it("strips letters and punctuation", () => {
+    expect(sanitizeNumericField("1a2b")).toBe("12");
+    expect(sanitizeNumericField("12,5")).toBe("125");
+    expect(sanitizeNumericField("-3")).toBe("3");
+  });
+  it("drops decimal points after the first but keeps the digits", () => {
+    expect(sanitizeNumericField("1.2.3")).toBe("1.23");
+    expect(sanitizeNumericField("..5")).toBe(".5");
+  });
+  it("returns empty for input with no digits or dot", () => {
+    expect(sanitizeNumericField("abc")).toBe("");
+    expect(sanitizeNumericField("")).toBe("");
   });
 });

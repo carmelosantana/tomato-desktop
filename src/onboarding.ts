@@ -17,6 +17,7 @@ import type { TomatoConfig } from "./native/config";
 import {
   minutesToClampedSeconds,
   secondsToMinutes,
+  sanitizeNumericField,
   SETTINGS_SAVED,
   SPRINT_BOUNDS,
   BREAK_BOUNDS,
@@ -68,6 +69,15 @@ let mode = DEFAULT_CONFIG.mode;
 // Round to at most one decimal place for a clean minutes display (e.g. 0.5).
 const toMinField = (seconds: number): string =>
   String(Math.round(secondsToMinutes(seconds) * 10) / 10);
+
+// The duration fields are plain text (no spinner arrows); keep them numeric as
+// the user types. Bounds clamping still happens on "Get started".
+for (const el of [sprintEl, breakEl]) {
+  el.addEventListener("input", () => {
+    const clean = sanitizeNumericField(el.value);
+    if (clean !== el.value) el.value = clean;
+  });
+}
 
 // --- render ----------------------------------------------------------------
 function render(): void {

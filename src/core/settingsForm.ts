@@ -51,3 +51,24 @@ export function secondsToMinutes(seconds: number): number {
 export function minutesToClampedSeconds(minutes: number, bounds: DurationBounds): number {
   return clamp(minutesToSeconds(minutes), bounds.minS, bounds.maxS);
 }
+
+/**
+ * Keystroke-level guard for the plain-text duration fields: keep only digits and
+ * a single decimal point (the first one wins; later dots are dropped). This lets
+ * the inputs be `type="text"` — no spinner arrows — while still refusing letters
+ * and stray punctuation as the user types. Final bounds clamping still happens on
+ * Save via `minutesToClampedSeconds`.
+ */
+export function sanitizeNumericField(raw: string): string {
+  let out = "";
+  let dotSeen = false;
+  for (const ch of raw) {
+    if (ch >= "0" && ch <= "9") {
+      out += ch;
+    } else if (ch === "." && !dotSeen) {
+      out += ch;
+      dotSeen = true;
+    }
+  }
+  return out;
+}

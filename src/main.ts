@@ -81,6 +81,15 @@ const systemDark = (): boolean =>
   typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
 const theme = (): Theme => (systemDark() ? "dark" : "light");
 
+/**
+ * Native window background (RGBA, 0–255) matching the current theme's `--bg`
+ * token (#f7f3ee / #171310). Set on child windows at creation so the webview
+ * paints the themed color on the first frame instead of flashing white before
+ * the page's CSS loads.
+ */
+const windowBg = (): [number, number, number, number] =>
+  systemDark() ? [23, 19, 16, 255] : [247, 243, 238, 255];
+
 async function main(): Promise<void> {
   const toTimerConfig = (c: TomatoConfig): TimerConfig => ({
     sprintMs: c.sprint_s * 1000,
@@ -278,6 +287,7 @@ async function main(): Promise<void> {
       resizable: true,
       center: true,
       focus: true,
+      backgroundColor: windowBg(),
     });
     statsWindow = win;
     win.once("tauri://error", (e) => console.error("stats window failed", e));
@@ -306,6 +316,7 @@ async function main(): Promise<void> {
       resizable: false,
       center: true,
       focus: true,
+      backgroundColor: windowBg(),
     });
     settingsWindow = win;
     win.once("tauri://error", (e) => console.error("settings window failed", e));
@@ -338,6 +349,7 @@ async function main(): Promise<void> {
       resizable: false,
       center: true,
       focus: true,
+      backgroundColor: windowBg(),
     });
     onboardingWindow = win;
     win.once("tauri://error", (e) => console.error("onboarding window failed", e));
@@ -541,6 +553,11 @@ async function main(): Promise<void> {
   if (!config.onboarded) {
     await openOnboarding().catch((err) => console.error("onboarding open failed", err));
   }
+
+  // Auto-start the first sprint on launch so the timer is running the moment the
+  // app comes up — no need to open the tray menu to begin. Durations chosen in
+  // first-run onboarding apply to the NEXT sprint (deferred-config semantics).
+  await onStart().catch((err) => console.error("auto-start failed", err));
 
   // 1 Hz loop: advance the machine, persist whatever it emitted, react, redraw.
   // A re-entrancy guard skips a tick if the previous one's async IO (persist /

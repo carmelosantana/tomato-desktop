@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tomato — settings</title>
+    <!-- Critical: paint the themed background on first frame so the webview
+         never flashes white before the external stylesheets load. -->
+    <style>
+      html { background: #f7f3ee; color-scheme: light dark; }
+      @media (prefers-color-scheme: dark) { html { background: #171310; } }
+    </style>
     <link rel="stylesheet" href="styles/fonts.css" />
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/settings.css" />
@@ -23,11 +29,9 @@
             <input
               id="sprint"
               class="num"
-              type="number"
+              type="text"
               inputmode="decimal"
-              min="1"
-              max="60"
-              step="1"
+              autocomplete="off"
               aria-label="Sprint length in minutes"
             />
             <span class="unit">min</span>
@@ -44,11 +48,9 @@
             <input
               id="break"
               class="num"
-              type="number"
+              type="text"
               inputmode="decimal"
-              min="0.5"
-              max="30"
-              step="0.5"
+              autocomplete="off"
               aria-label="Break length in minutes"
             />
             <span class="unit">min</span>
@@ -65,11 +67,9 @@
             <input
               id="grace"
               class="num"
-              type="number"
+              type="text"
               inputmode="decimal"
-              min="0"
-              max="10"
-              step="0.5"
+              autocomplete="off"
               aria-label="Grace window in minutes"
             />
             <span class="unit">min</span>
