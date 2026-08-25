@@ -12,7 +12,7 @@
       "allow": [{ "path": "$DATA/tomato/events.jsonl" }]
     },
     {
-      "identifier": "fs:allow-read-file",
+      "identifier": "fs:allow-read-text-file",
       "allow": [{ "path": "$DATA/tomato/events.jsonl" }]
     }
   ]

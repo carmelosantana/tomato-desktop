@@ -140,7 +140,7 @@ async function save(): Promise<void> {
     await saveConfig(next);
   } catch (err) {
     console.error("settings: saveConfig failed", err);
-    msgEl.textContent = `Couldn't save (write): ${err}`;
+    msgEl.textContent = "Couldn't save settings.";
     saveEl.disabled = false;
     return;
   }
@@ -166,7 +166,7 @@ async function save(): Promise<void> {
     await getCurrentWindow().close();
   } catch (err) {
     console.error("settings: window close failed", err);
-    msgEl.textContent = `Saved — but couldn't close: ${err}`;
+    msgEl.textContent = "Saved — but the window wouldn't close.";
     saveEl.disabled = false;
   }
 }

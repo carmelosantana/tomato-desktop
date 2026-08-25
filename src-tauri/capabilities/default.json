@@ -32,14 +32,14 @@
       ]
     },
     {
-      "identifier": "fs:allow-read-file",
+      "identifier": "fs:allow-read-text-file",
       "allow": [
         { "path": "$DATA/tomato/events.jsonl" },
         { "path": "$CONFIG/tomato/config.json" }
       ]
     },
     {
-      "identifier": "fs:allow-write-file",
+      "identifier": "fs:allow-write-text-file",
       "allow": [
         { "path": "$DATA/tomato/events.jsonl" },
         { "path": "$CONFIG/tomato/config.json" }

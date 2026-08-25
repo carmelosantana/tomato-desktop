@@ -18,11 +18,11 @@
       "allow": [{ "path": "$CONFIG/tomato/config.json" }]
     },
     {
-      "identifier": "fs:allow-read-file",
+      "identifier": "fs:allow-read-text-file",
       "allow": [{ "path": "$CONFIG/tomato/config.json" }]
     },
     {
-      "identifier": "fs:allow-write-file",
+      "identifier": "fs:allow-write-text-file",
       "allow": [{ "path": "$CONFIG/tomato/config.json" }]
     }
   ]

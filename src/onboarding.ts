@@ -145,7 +145,7 @@ async function finish(): Promise<void> {
     await saveConfig(next);
   } catch (err) {
     console.error("onboarding: saveConfig failed", err);
-    msgEl.textContent = `Couldn't save (write): ${err}`;
+    msgEl.textContent = "Couldn't save. Please try again.";
     nextEl.disabled = false;
     return;
   }
@@ -163,7 +163,7 @@ async function finish(): Promise<void> {
     await getCurrentWindow().close();
   } catch (err) {
     console.error("onboarding: window close failed", err);
-    msgEl.textContent = `Saved — but couldn't close: ${err}`;
+    msgEl.textContent = "Saved — but the window wouldn't close.";
     nextEl.disabled = false;
   }
 }
