@@ -61,9 +61,11 @@ const ONBOARDING_LABEL = "onboarding";
 const ONBOARDING_W = 500;
 const ONBOARDING_H = 560;
 
-/** Settings window logical size (px), per the design's Settings screen. */
+/** Settings window logical size (px), per the design's Settings screen. Height
+ *  fits the card (~455px) plus even 20px margins with headroom, so the content
+ *  never scrolls. */
 const SETTINGS_W = 560;
-const SETTINGS_H = 480;
+const SETTINGS_H = 512;
 
 /** Stats window logical size (px). */
 const STATS_W = 720;
