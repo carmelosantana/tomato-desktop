@@ -1,14 +1,13 @@
 export type DndState = "active" | "inactive" | "unknown";
-export type NudgeKind = "card" | "card-quiet" | "notification";
+export type NudgeDecision = "notify" | "suppress";
 
-export function decideNudge(dnd: DndState): NudgeKind {
+export function decideNudge(dnd: DndState): NudgeDecision {
   switch (dnd) {
-    case "inactive":
-      return "card";
     case "active":
-      return "notification";
+      return "suppress";
+    case "inactive":
     case "unknown":
-      return "card-quiet";
+      return "notify";
     default: {
       const _exhaustive: never = dnd;
       return _exhaustive;
