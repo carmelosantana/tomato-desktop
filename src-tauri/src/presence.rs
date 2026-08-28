@@ -20,10 +20,25 @@ trait IdleMonitor {
     #[zbus(name = "GetIdletime")]
     fn get_idletime(&self) -> zbus::Result<u64>; // milliseconds
 }
+// Cache the session-bus connection + proxy so we open it once, not once per second.
+// The generated blocking proxy owns a clone of the Connection and has a 'static
+// lifetime with the attribute defaults above, so it caches directly. If the proxy
+// can't be built yet we return Err (caller falls back to gdbus/x11) and retry next
+// call until it succeeds; once built it's reused for the app's lifetime.
 #[cfg(target_os = "linux")]
-fn idle_seconds_gnome() -> zbus::Result<f64> {
+fn idle_monitor_proxy() -> zbus::Result<&'static IdleMonitorProxyBlocking<'static>> {
+    use std::sync::OnceLock;
+    static PROXY: OnceLock<IdleMonitorProxyBlocking<'static>> = OnceLock::new();
+    if let Some(proxy) = PROXY.get() {
+        return Ok(proxy);
+    }
     let conn = zbus::blocking::Connection::session()?;
     let proxy = IdleMonitorProxyBlocking::new(&conn)?;
+    Ok(PROXY.get_or_init(|| proxy))
+}
+#[cfg(target_os = "linux")]
+fn idle_seconds_gnome() -> zbus::Result<f64> {
+    let proxy = idle_monitor_proxy()?;
     Ok(proxy.get_idletime()? as f64 / 1000.0)
 }
 
