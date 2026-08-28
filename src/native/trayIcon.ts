@@ -6,13 +6,26 @@
 // manually inside a running Tauri app. The pure geometry (describeRing) and the
 // color tokens it leans on ARE unit-tested in src/core.
 //
-// - focus / grace / overrun  → renderRing() draws the arc per describeRing().
-// - idle / break             → a static kit PNG from docs/design/assets/tray.
+// - focus / overrun  → renderRing() draws the arc per describeRing().
+// - idle             → renderRing() draws an empty (progress 0) muted ring; the
+//                      static kit PNG remains available via staticIconUrl().
 
 import { describeRing } from "../core/ring";
 import type { RingColorRole } from "../core/ring";
 import { ringProgressColor, ringTrackColor } from "../core/tokens";
 import type { Theme } from "../core/tokens";
+
+/**
+ * Map a v2 ring color role to a theme color token. This is the single place that
+ * couples presence roles to design tokens:
+ *  - `idle`    → the muted `--ring-track` / neutral border token (empty ring).
+ *  - `focus`   → the `--focus` state token.
+ *  - `overrun` → the `--overrun` state token.
+ */
+function roleColor(theme: Theme, role: RingColorRole): string {
+  if (role === "idle") return ringTrackColor(theme);
+  return ringProgressColor(theme, role);
+}
 
 /**
  * Draw the tray ring and return raw RGBA bytes (length = size*size*4), ready for
@@ -48,7 +61,7 @@ export function renderRing(
   if (p > 0) {
     const startRad = (dims.startAngleDeg * Math.PI) / 180;
     const sweep = p * Math.PI * 2 * (dims.clockwise ? 1 : -1);
-    ctx.strokeStyle = ringProgressColor(theme, colorRole);
+    ctx.strokeStyle = roleColor(theme, colorRole);
     ctx.beginPath();
     ctx.arc(dims.center, dims.center, dims.arcRadius, startRad, startRad + sweep, !dims.clockwise);
     ctx.stroke();

@@ -4,7 +4,7 @@
 // Geometry constants mirror docs/design/tomato-tokens.json `ring` group
 // byte-for-byte so the runtime ring matches the design kit exactly.
 
-import type { TimerState } from "./timer";
+import type { PresenceState } from "./presence";
 
 /** Static ring geometry, mirroring the `ring` group in tomato-tokens.json. */
 export interface RingGeometry {
@@ -31,14 +31,19 @@ export const RING_GEOMETRY: RingGeometry = {
   innerGapPx: 2,
 };
 
-export type RingColorRole = "focus" | "grace" | "overrun";
-export type RingGlyph = "●" | "◑" | "◼" | "▲";
+/**
+ * Presence-companion ring roles (v2). The ring is a passive read-out of the
+ * PresenceMachine, so there are exactly three visual states:
+ *  - `idle`    — no active sprint (away/paused): empty ring, muted.
+ *  - `focus`   — active sprint below the soft boundary: arc fills to progress.
+ *  - `overrun` — active sprint at/past the boundary: full arc, over-run color.
+ */
+export type RingColorRole = "idle" | "focus" | "overrun";
 
 export interface RingVisual {
   /** clamped [0,1] fill fraction of the arc */
   progress: number;
   colorRole: RingColorRole;
-  glyph: RingGlyph;
 }
 
 /** Resolved pixel dimensions for a given canvas size, ready for the renderer. */
@@ -73,44 +78,26 @@ export function ringProgress(elapsedMs: number, totalMs: number): number {
 }
 
 /**
- * Map timer state + sprint progress to the ring's visual triplet.
+ * Project the presence state + active span onto the ring's visual pair.
  *
- * Precedence:
- *  - break            → ◼ (fallback colorRole "focus"; the ring group has no
- *                          break progress colour, so break reuses the base role)
- *  - grace            → ◑ / grace    (state === "grace" or graceActive flag;
- *                          grace is expected overtime, so it wins over over-run
- *                          even though elapsed > total during the grace window)
- *  - over-run (>1)    → ▲ / overrun  (focus carried past the boundary in soft mode)
- *  - focus            → ● / focus
- *  - idle | stopped   → ● / focus    (resting default)
+ * The ring only ever reflects an ACTIVE sprint:
+ *  - `away` / `paused`            → `{ progress: 0, colorRole: "idle" }` — the ring
+ *                                    rests empty; `activeMs` is ignored.
+ *  - `active`, `activeMs < sprintMs`  → `{ progress: clamp01(activeMs/sprintMs),
+ *                                    colorRole: "focus" }` — the arc fills toward
+ *                                    the soft boundary.
+ *  - `active`, `activeMs >= sprintMs` → `{ progress: 1, colorRole: "overrun" }` —
+ *                                    at/past the boundary the ring is full and the
+ *                                    companion is gently nudging.
  */
-export function ringVisual(
-  state: TimerState,
-  sprintElapsedMs: number,
-  sprintMs: number,
-  graceActive: boolean,
-): RingVisual {
-  const progress = ringProgress(sprintElapsedMs, sprintMs);
-  const rawRatio = sprintMs > 0 ? sprintElapsedMs / sprintMs : 0;
-
-  if (state === "break") {
-    return { progress, colorRole: "focus", glyph: "◼" };
+export function ringVisual(state: PresenceState, activeMs: number, sprintMs: number): RingVisual {
+  if (state !== "active") {
+    return { progress: 0, colorRole: "idle" };
   }
-
-  // Grace is expected overtime: it must read amber ◑ regardless of ratio > 1,
-  // so it is decided before the over-run check.
-  if (state === "grace" || graceActive) {
-    return { progress, colorRole: "grace", glyph: "◑" };
+  if (activeMs >= sprintMs) {
+    return { progress: 1, colorRole: "overrun" };
   }
-
-  // Over-run: focus carried past the boundary (soft mode) shows the overrun cue.
-  if (rawRatio > 1) {
-    return { progress, colorRole: "overrun", glyph: "▲" };
-  }
-
-  // focus, idle, stopped → resting/active focus dot.
-  return { progress, colorRole: "focus", glyph: "●" };
+  return { progress: ringProgress(activeMs, sprintMs), colorRole: "focus" };
 }
 
 /** Resolve the ring's pixel dimensions for a canvas of `size` px. */

@@ -6,10 +6,16 @@
 // No Tauri/DOM/canvas here — keep this importable from both node (tests) and the
 // webview (renderer).
 
-import type { RingColorRole } from "./ring";
-
 /** Resolved color theme for the tray (system → one of these two). */
 export type Theme = "light" | "dark";
+
+/**
+ * Progress-arc token names in the `state` group. Kept independent of the ring's
+ * `RingColorRole` (roles no longer map 1:1 to token names — e.g. the `idle` role
+ * resolves to the track/border token, not a `state` token — so the color-role →
+ * token mapping lives in native/trayIcon.ts).
+ */
+export type RingProgressToken = "focus" | "grace" | "overrun";
 
 /** The four colors the ring renderer needs, per theme. */
 export interface RingTokens {
@@ -50,7 +56,7 @@ export function ringTrackColor(theme: Theme): string {
   return RING_TOKENS[theme].track;
 }
 
-/** Progress-arc color for a ring color role in a theme. */
-export function ringProgressColor(theme: Theme, role: RingColorRole): string {
-  return RING_TOKENS[theme][role];
+/** Progress-arc color for a `state`-group token name in a theme. */
+export function ringProgressColor(theme: Theme, token: RingProgressToken): string {
+  return RING_TOKENS[theme][token];
 }

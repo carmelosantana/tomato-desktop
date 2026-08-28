@@ -24,46 +24,54 @@ describe("ringProgress", () => {
   });
 });
 
-describe("ringVisual state → colorRole + glyph mapping", () => {
-  it("focus → ● / focus", () => {
-    const v = ringVisual("focus", 300, 1000, false);
-    expect(v.glyph).toBe("●");
+describe("ringVisual presence → progress + colorRole", () => {
+  const sprintMs = 1000;
+
+  it("away → { progress: 0, colorRole: idle }", () => {
+    expect(ringVisual("away", 0, sprintMs)).toEqual({ progress: 0, colorRole: "idle" });
+    // activeMs is meaningless while away; it must not leak into progress.
+    expect(ringVisual("away", 500, sprintMs)).toEqual({ progress: 0, colorRole: "idle" });
+  });
+
+  it("paused → { progress: 0, colorRole: idle }", () => {
+    expect(ringVisual("paused", 0, sprintMs)).toEqual({ progress: 0, colorRole: "idle" });
+    expect(ringVisual("paused", 800, sprintMs)).toEqual({ progress: 0, colorRole: "idle" });
+  });
+
+  it("active at the very start → progress 0, focus", () => {
+    expect(ringVisual("active", 0, sprintMs)).toEqual({ progress: 0, colorRole: "focus" });
+  });
+
+  it("active mid-sprint → progress ~0.5, focus", () => {
+    const v = ringVisual("active", 500, sprintMs);
     expect(v.colorRole).toBe("focus");
-    expect(v.progress).toBeCloseTo(0.3, 5);
+    expect(v.progress).toBeCloseTo(0.5, 5);
   });
 
-  it("grace → ◑ / grace", () => {
-    const v = ringVisual("grace", 1000, 1000, true);
-    expect(v.glyph).toBe("◑");
-    expect(v.colorRole).toBe("grace");
-    expect(v.progress).toBe(1);
-  });
-
-  it("break → ◼ (fallback colorRole focus)", () => {
-    const v = ringVisual("break", 0, 1000, false);
-    expect(v.glyph).toBe("◼");
+  it("active just below the boundary → focus, progress < 1", () => {
+    const v = ringVisual("active", 999, sprintMs);
     expect(v.colorRole).toBe("focus");
+    expect(v.progress).toBeCloseTo(0.999, 5);
+    expect(v.progress).toBeLessThan(1);
   });
 
-  it("over-run (progress > 1 in soft focus) → ▲ / overrun", () => {
-    const v = ringVisual("focus", 1500, 1000, false);
-    expect(v.glyph).toBe("▲");
-    expect(v.colorRole).toBe("overrun");
-    expect(v.progress).toBe(1);
+  it("active exactly at the boundary (activeMs === sprintMs) → progress 1, overrun", () => {
+    expect(ringVisual("active", sprintMs, sprintMs)).toEqual({ progress: 1, colorRole: "overrun" });
   });
 
-  it("grace beats over-run: grace + elapsed > total → ◑ / grace", () => {
-    const sprintMs = 1000;
-    const v = ringVisual("grace", sprintMs + 60_000, sprintMs, true);
-    expect(v.colorRole).toBe("grace");
-    expect(v.glyph).toBe("◑");
-    expect(v.progress).toBe(1);
+  it("active past the boundary → progress clamps to 1, overrun", () => {
+    expect(ringVisual("active", sprintMs + 60_000, sprintMs)).toEqual({
+      progress: 1,
+      colorRole: "overrun",
+    });
   });
 
-  it("idle/stopped → resting ● / focus", () => {
-    expect(ringVisual("idle", 0, 1000, false).glyph).toBe("●");
-    expect(ringVisual("stopped", 0, 1000, false).glyph).toBe("●");
-    expect(ringVisual("idle", 0, 1000, false).colorRole).toBe("focus");
+  it("progress is always within [0, 1]", () => {
+    for (const activeMs of [0, 250, 500, 999, 1000, 5000]) {
+      const p = ringVisual("active", activeMs, sprintMs).progress;
+      expect(p).toBeGreaterThanOrEqual(0);
+      expect(p).toBeLessThanOrEqual(1);
+    }
   });
 });
 
