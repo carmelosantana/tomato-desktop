@@ -95,11 +95,13 @@ async function main(): Promise<void> {
   // Per-sprint id threaded into the event mapper; minted on sprint-started.
   let sprintId = "";
 
-  // Whether the OS presence provider is available this session. Determined once
-  // (availability is stable per session); when false we run in MANUAL mode: the
-  // user starts/stops sprints from the tray and the loop passes idleMs = null.
+  // Whether the OS presence provider is available. Seeded at startup, then kept in
+  // sync with the LIVE per-tick idle reading (see the 1 Hz loop), so if a provider
+  // flips availability mid-session (e.g. a startup D-Bus race) the tray menu and
+  // tooltip follow it. When unavailable we run in MANUAL mode: the user starts/stops
+  // sprints from the tray and the loop passes idleMs = null.
   const firstIdle = await idleSeconds();
-  const available = firstIdle !== null;
+  let available = firstIdle !== null;
 
   // Tray menu items, held so they can be enabled/disabled by state.
   let pauseItem: MenuItem | null = null;
@@ -164,19 +166,35 @@ async function main(): Promise<void> {
     await tray.setIcon(image);
   }
 
-  // Reflect the machine's state in the tray menu's enabled items. Only touches
-  // the menu when the state actually changes (not every 1 Hz tick).
+  // Reflect the machine's state AND the live presence availability in the tray
+  // menu's enabled items (plus the tooltip). Only touches the menu when the state
+  // or availability actually changes (not every 1 Hz tick). Start/Stop always
+  // exist; they're enabled only in manual mode, so no menu rebuild is ever needed
+  // if availability flips.
   let lastMenuState: PresenceState | null = null;
+  let lastAvailable: boolean | null = null;
   async function syncMenu(): Promise<void> {
     const s = machine.currentState();
-    if (s === lastMenuState) return;
+    if (s === lastMenuState && available === lastAvailable) return;
+    const availabilityChanged = available !== lastAvailable;
     lastMenuState = s;
+    lastAvailable = available;
     // Pause is available while tracking (away/active); Resume only while paused.
     if (pauseItem) await pauseItem.setEnabled(s !== "paused").catch(() => {});
     if (resumeItem) await resumeItem.setEnabled(s === "paused").catch(() => {});
-    // Manual Start needs away; manual Stop needs an active sprint.
-    if (startItem) await startItem.setEnabled(s === "away").catch(() => {});
-    if (stopItem) await stopItem.setEnabled(s === "active").catch(() => {});
+    // Manual Start/Stop only when no presence provider is live: Start needs away,
+    // Stop needs an active sprint. When presence is available they stay disabled
+    // (presence auto-starts/stops sprints).
+    if (startItem) await startItem.setEnabled(!available && s === "away").catch(() => {});
+    if (stopItem) await stopItem.setEnabled(!available && s === "active").catch(() => {});
+    // Tooltip reflects the live mode; rewrite it only when availability flips.
+    if (availabilityChanged) {
+      await tray
+        .setTooltip(
+          available ? "Tomato" : "Tomato — presence detection unavailable (manual mode)",
+        )
+        .catch(() => {});
+    }
   }
 
   // Single pipeline for every batch of raw events: persist → react → redraw →
@@ -331,22 +349,22 @@ async function main(): Promise<void> {
 
   const items: (MenuItem | PredefinedMenuItem)[] = [];
 
-  // In manual mode (no presence provider) the user drives sprints by hand, so
-  // surface Start/Stop as well.
-  if (!available) {
-    startItem = await MenuItem.new({
-      id: "start",
-      text: "Start",
-      action: () => void apply(machine.manualStart(Date.now())),
-    });
-    stopItem = await MenuItem.new({
-      id: "stop",
-      text: "Stop",
-      enabled: false,
-      action: () => void apply(machine.manualStop(Date.now())),
-    });
-    items.push(startItem, stopItem, await PredefinedMenuItem.new({ item: "Separator" }));
-  }
+  // Start/Stop always exist (manual mode drives sprints by hand). They're enabled
+  // only when no presence provider is live — syncMenu keeps that in sync with the
+  // live availability, so a mid-session flip never needs a menu rebuild.
+  startItem = await MenuItem.new({
+    id: "start",
+    text: "Start",
+    enabled: !available,
+    action: () => void apply(machine.manualStart(Date.now())),
+  });
+  stopItem = await MenuItem.new({
+    id: "stop",
+    text: "Stop",
+    enabled: false,
+    action: () => void apply(machine.manualStop(Date.now())),
+  });
+  items.push(startItem, stopItem, await PredefinedMenuItem.new({ item: "Separator" }));
 
   items.push(
     pauseItem,
@@ -404,6 +422,9 @@ async function main(): Promise<void> {
         applyPendingConfig();
         const idle = await idleSeconds();
         const idleMs = idle === null ? null : Math.round(idle * 1000);
+        // Track live availability so syncMenu can reshape the menu/tooltip if a
+        // provider flips mid-session. Updated before apply() (which runs syncMenu).
+        available = idleMs !== null;
         await apply(machine.tick(Date.now(), idleMs));
       } catch (err) {
         console.error("tomato tick failed", err);
