@@ -15,15 +15,12 @@ export default defineConfig(async () => ({
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
   // Multi-page build: the hidden main window (index.html) plus the webview
-  // windows opened at runtime (grace toast + break card boundary windows, and
-  // the stats window). Each needs its own HTML entry so Vite bundles its module
-  // and emits it under dist/.
+  // windows opened at runtime (stats, settings, onboarding). Each needs its own
+  // HTML entry so Vite bundles its module and emits it under dist/.
   build: {
     rollupOptions: {
       input: {
         main: resolve(root, "index.html"),
-        "grace-toast": resolve(root, "src/grace-toast.html"),
-        "break-card": resolve(root, "src/break-card.html"),
         stats: resolve(root, "src/stats.html"),
         settings: resolve(root, "src/settings.html"),
         onboarding: resolve(root, "src/onboarding.html"),

@@ -6,16 +6,22 @@ const sprintStarted: DomainEvent = {
   event: "sprint_started",
   ts: 5,
   sprint_id: "S1",
-  planned_s: 900,
-  enforcement_mode: "enforced",
+  trigger: "activity",
 };
-const boundary: DomainEvent = { event: "boundary_reached", ts: 900, sprint_id: "S1" };
+const nudge: DomainEvent = {
+  event: "nudge",
+  ts: 900,
+  sprint_id: "S1",
+  active_s: 900,
+  index: 0,
+};
 const ended: DomainEvent = {
   event: "sprint_ended",
   ts: 960,
   sprint_id: "S1",
-  actual_focus_s: 960,
-  over_run_s: 60,
+  active_s: 960,
+  over_s: 60,
+  ended_by: "idle_reset",
 };
 
 describe("serializeEvent", () => {
@@ -28,19 +34,19 @@ describe("serializeEvent", () => {
 
 describe("parseEvents", () => {
   it("round-trips serialize → parse for a batch of events", () => {
-    const events = [sprintStarted, boundary, ended];
+    const events = [sprintStarted, nudge, ended];
     const text = events.map(serializeEvent).join("\n") + "\n";
     expect(parseEvents(text)).toEqual(events);
   });
 
   it("ignores a blank trailing line", () => {
-    const text = serializeEvent(boundary) + "\n\n";
-    expect(parseEvents(text)).toEqual([boundary]);
+    const text = serializeEvent(nudge) + "\n\n";
+    expect(parseEvents(text)).toEqual([nudge]);
   });
 
   it("tolerates missing trailing newline", () => {
-    const text = serializeEvent(boundary);
-    expect(parseEvents(text)).toEqual([boundary]);
+    const text = serializeEvent(nudge);
+    expect(parseEvents(text)).toEqual([nudge]);
   });
 
   it("skips interior blank / whitespace-only lines", () => {
@@ -60,7 +66,7 @@ describe("parseEvents", () => {
     // Append-only log torn mid-write: a partial line between two valid records.
     const text = [
       serializeEvent(sprintStarted),
-      '{"event":"boundary_reached","ts":900,"sprint',
+      '{"event":"nudge","ts":900,"sprint',
       serializeEvent(ended),
     ].join("\n");
     expect(() => parseEvents(text)).not.toThrow();

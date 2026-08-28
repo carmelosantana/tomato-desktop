@@ -1,70 +1,89 @@
 # Tomato — End-to-end verification
 
-Verification instrument for the desktop app (`build/desktop-v0.1`). Automated checks
-run green in this environment; GUI/native behavior is exercised by the manual
-test-drive checklist below, on a real display. The ~2-week concept test-drive is the
-point of this instrument.
+Verification instrument for the desktop app (`build/v2-presence`). Tomato v2 is a
+**Presence Companion**: it does not enforce a timer. It watches OS input-idle,
+auto-starts a "sprint" when you begin working, ends it (logging a break) when you
+step away, and gently nudges when a sprint runs long. Automated checks run green in
+this environment; GUI/native behavior is exercised by the manual test-drive
+checklist below, on a real display. The ~2-week concept test-drive is the point of
+this instrument.
+
+## Build prerequisites
+
+- **Linux:** `sudo apt-get install -y libxss-dev libx11-dev` is **required**. The
+  `x11` crate's `build.rs` runs `pkg-config --cflags --libs xscrnsaver` even at
+  `cargo check` (not just at link time), so without `xscrnsaver.pc` (from
+  `libxss-dev`) even `cargo check` panics. `libx11-dev` provides `x11.pc`.
+- **macOS:** the macOS idle provider ships compiled and `cfg`-gated, but on-device
+  Mac verification is **deferred** — no Mac in this environment.
 
 ## Automated verification (green here)
 
-- **Unit tests:** `pnpm test` → **101 passed** across **13 test files**, ~0.3s.
+- **Unit tests:** `pnpm test` → **121 passed** across **13 test files**, ~0.3s.
 - **Type check:** `npx tsc --noEmit` → clean (exit 0).
-- **Build artifacts** (from Task 14, `pnpm tauri build`):
-  - `src-tauri/target/release/bundle/deb/Tomato_0.1.0_amd64.deb` — ~4.9M
-  - `src-tauri/target/release/bundle/appimage/Tomato_0.1.0_amd64.AppImage` — ~77M
-  - Rebuild only if needed (slow): `pnpm tauri build`.
-- **Coverage note:** the pure Spec-1 core is unit-tested — `timer`, `events`,
+- **`cargo check`** (in `src-tauri/`): green **only with `libxss-dev` + `libx11-dev`
+  installed**. Without them it panics at the `x11` crate's build script:
+  `Package 'xscrnsaver' … not found` — this is the documented build prereq above,
+  not a code fault.
+- **Coverage note:** the pure v2 core is unit-tested — `presence`, `events`,
   `ring`, `nudge`, `stats`, `jsonl`, `settingsForm`, `statsChart`, `onboardingSteps`
   (plus `format`, `theme`, `tokens`, `version`).
 
 ## Manual test-drive checklist (GUI / native)
 
 Run with `pnpm tauri dev`, or launch the packaged AppImage, on a real display.
-Tip: temporarily shorten sprint/break/grace in Settings (or `~/.config/tomato/config.json`)
-to run a full cadence in seconds.
+Tip: temporarily shorten sprint length / idle-reset / re-nudge in Settings (or
+`~/.config/tomato/config.json`) to run a full cadence in seconds.
 
-### Persistence
-- [ ] Two events append as valid JSON lines to `~/.local/share/tomato/events.jsonl`.
-- [ ] `~/.config/tomato/config.json` round-trips on Settings save.
-- [ ] A torn/partial last line does not make the log unreadable (rest still parses).
-- [ ] Corrupt config falls back to defaults.
+### Presence auto-start & idle reset
+- [ ] Start typing/moving with nothing running: a sprint auto-starts once activity
+  clears the idle threshold (and the noise floor — very short sprints are never
+  logged).
+- [ ] Tray ring begins filling green while the sprint is active.
+- [ ] Step away (no input) for ≥ the idle-reset threshold: the sprint ends and the
+  ring returns to idle. The idle gap becomes the **break** in Stats.
+- [ ] A sprint shorter than the noise floor logs neither `sprint_started` nor
+  `sprint_ended`.
 
-### Tray + loop
-- [ ] Tray shows the ring.
-- [ ] Ring fills and re-tints: green → amber (grace) → (break static) → idle.
-- [ ] Start / Stop / Quit menu items work.
-- [ ] Stats… and Settings… open their windows.
+### Boundary nudge & re-nudge
+- [ ] When the active span reaches the sprint length, a boundary **nudge** fires
+  (notification / gentle ring tint) — nothing is blocked or forced.
+- [ ] Keep working past the boundary: re-nudges fire on the re-nudge cadence
+  (index 1, 2, …), with the ring reflecting the over-run.
+- [ ] JSONL shows, in order: `sprint_started {trigger:"activity"}` →
+  `nudge {index:0}` → `nudge {index:1}` … → `sprint_ended {ended_by:"idle_reset"}`,
+  with a plausible `active_s` / `over_s`.
 
-### Cadence (enforced mode)
-- [ ] At boundary the ring goes amber + grace toast: "Wrap up — break in M:SS".
-- [ ] Break-now starts the break immediately.
-- [ ] Otherwise the break card counts down; Skip ends it.
-- [ ] On break completion, returns to idle (no auto-chain).
-- [ ] JSONL shows, in order: `sprint_started` → `boundary_reached` →
-  `grace_started` → `grace_ended` → `break_started` → `break_completed` →
-  `sprint_ended`, with correct `over_run_s`.
+### Pause / Resume
+- [ ] Tray **Pause** stops presence tracking; an in-progress sprint ends with
+  `ended_by:"paused"`, and no new sprints start while paused.
+- [ ] Tray **Resume** re-enables tracking; the next activity auto-starts a sprint.
 
-### DND
-- [ ] GNOME Do-Not-Disturb ON: enforced break degrades to an OS notification (card suppressed).
-- [ ] DND state unknown: a quiet card (no focus steal / no sound).
-- [ ] Soft mode: notification only, no card, at boundary.
-
-### Cold-idle (early grace)
-- [ ] A fresh Start after >30 min idle emits `grace_started` with
-  `grace_s == early_grace_s`.
+### Manual mode (honest degrade)
+- [ ] On a platform where OS idle detection is unavailable (e.g. non-GNOME
+  Wayland), the app surfaces **manual mode** honestly — it does not silently claim
+  to be tracking presence.
+- [ ] In manual mode, only explicit start/stop drives sprints (wall-time nudges
+  only); there is no auto-start or idle auto-reset.
 
 ### Stats window
-- [ ] Opens from tray.
-- [ ] Today's sprints, breaks-taken-vs-skipped, over-run, streak, timeline, and
-  7-day chart render correctly in **light** and **dark**.
-- [ ] Numbers match the event log.
+- [ ] Opens from the tray.
+- [ ] **Active time** (today), **longest stretch**, **breaks** (count + total),
+  **nudges / nudge-adherence**, and the **7-day active chart** render correctly in
+  **light** and **dark**.
+- [ ] Every metric matches the event log: active time = Σ `sprint_ended.active_s`;
+  breaks = gaps between a `sprint_ended` and the next same-day `sprint_started`;
+  nudge-adherence = fraction of boundary nudges whose sprint ended by `idle_reset`
+  within the adherence window.
 - [ ] Empty state shown when there is no data.
 
-### Settings
-- [ ] Opens.
-- [ ] Changing sprint/break/grace (minutes) + mode + Save persists to `config.json`.
-- [ ] The NEXT sprint uses the new values (an in-progress sprint is unaffected).
-- [ ] Autostart toggle creates/removes the login entry and reflects real state on reopen.
+### Persistence / config round-trip
+- [ ] Events append as valid JSON lines to `~/.local/share/tomato/events.jsonl`.
+- [ ] A torn/partial last line does not make the log unreadable (rest still parses).
+- [ ] `~/.config/tomato/config.json` round-trips on Settings save (sprint length,
+  idle-reset, re-nudge, noise floor); a corrupt config falls back to defaults.
+- [ ] Config changes take effect on the **next** sprint (an in-progress sprint is
+  unaffected).
 
 ### Onboarding
 - [ ] First run (no `onboarded` in config) shows onboarding.
@@ -72,11 +91,13 @@ to run a full cadence in seconds.
 - [ ] Second run goes straight to tray.
 
 ### Packaging
-- [ ] The built AppImage launches to tray and runs a full cadence outside dev.
+- [ ] The built AppImage launches to tray and runs a full presence cadence outside
+  dev.
 
 ## Known limitations / notes
 
-- This headless environment cannot exercise GUI/native behavior; hence the manual checklist.
-- CI (`.github/workflows`) has never executed — it is local-only and runs once a
-  remote exists.
+- This headless environment cannot exercise GUI/native behavior; hence the manual
+  checklist.
+- `cargo check`/`build` requires `libxss-dev` + `libx11-dev` (see Build
+  prerequisites); macOS on-device verification is deferred.
 - The ~2-week concept test-drive is the real evaluation this instrument enables.
