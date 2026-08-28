@@ -14,32 +14,23 @@
 import { mkdir, writeTextFile, readTextFile, exists } from "@tauri-apps/plugin-fs";
 import { configDir, join } from "@tauri-apps/api/path";
 
-/** Enforcement mode: "enforced" holds the boundary; "soft" only nudges. */
-export type EnforcementMode = "enforced" | "soft";
-
-/** Tomato settings. All *_s fields are durations in SECONDS (see units note). */
+/** Tomato v2 settings. All *_s fields are durations in SECONDS (see units note). */
 export interface TomatoConfig {
   /** Focus sprint length, seconds. */
   sprint_s: number;
-  /** Break length, seconds. */
-  break_s: number;
-  /** Post-boundary grace window, seconds. */
-  grace_s: number;
-  /** Allowance for ending a sprint early, seconds. */
-  early_grace_s: number;
-  /** Boundary enforcement behavior. */
-  mode: EnforcementMode;
+  /** Idle span that resets an in-progress sprint, seconds. */
+  idle_reset_s: number;
+  /** Interval between renudges once a sprint boundary is reached, seconds. */
+  renudge_every_s: number;
   /** Whether first-run onboarding has been completed. */
   onboarded: boolean;
 }
 
-/** Spec 1 defaults: 15m sprint / 5m break / 2m grace / 5m early-grace, enforced. */
+/** v2 Presence defaults: 15m sprint / 5m idle-reset / 15m renudge. */
 export const DEFAULT_CONFIG: TomatoConfig = {
   sprint_s: 900,
-  break_s: 300,
-  grace_s: 120,
-  early_grace_s: 300,
-  mode: "enforced",
+  idle_reset_s: 300,
+  renudge_every_s: 900,
   onboarded: false,
 };
 
@@ -53,16 +44,22 @@ async function configPath(ensureDir: boolean): Promise<string> {
 }
 
 /**
- * Load config, merging any stored values OVER the defaults. Returns the full
- * defaults when the file is absent, and defaults for any individual key the
- * file omits (partial configs are tolerated).
+ * Load config and return a CLEANED object: for each known key, the stored value
+ * when present else the default. Retired keys (e.g. v1's `break_s`, `grace_s`,
+ * `early_grace_s`, `mode`) are silently ignored — never spread through. Returns
+ * the full defaults when the file is absent or corrupt.
  */
 export async function loadConfig(): Promise<TomatoConfig> {
   const path = await configPath(false);
   if (!(await exists(path))) return { ...DEFAULT_CONFIG };
   try {
     const raw = JSON.parse(await readTextFile(path)) as Partial<TomatoConfig>;
-    return { ...DEFAULT_CONFIG, ...raw };
+    return {
+      sprint_s: raw.sprint_s ?? DEFAULT_CONFIG.sprint_s,
+      idle_reset_s: raw.idle_reset_s ?? DEFAULT_CONFIG.idle_reset_s,
+      renudge_every_s: raw.renudge_every_s ?? DEFAULT_CONFIG.renudge_every_s,
+      onboarded: raw.onboarded ?? DEFAULT_CONFIG.onboarded,
+    };
   } catch {
     // Corrupt or unreadable config.json — fall back to defaults, same as absent.
     return { ...DEFAULT_CONFIG };

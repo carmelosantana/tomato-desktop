@@ -6,8 +6,8 @@ import {
   minutesToClampedSeconds,
   sanitizeNumericField,
   SPRINT_BOUNDS,
-  BREAK_BOUNDS,
-  GRACE_BOUNDS,
+  IDLE_RESET_BOUNDS,
+  RENUDGE_BOUNDS,
 } from "./settingsForm";
 
 describe("clamp", () => {
@@ -54,19 +54,24 @@ describe("minutesToClampedSeconds", () => {
   it("clamps a too-short sprint up to 60 s", () => {
     expect(minutesToClampedSeconds(0.1, SPRINT_BOUNDS)).toBe(60);
   });
-  it("clamps break to its 30 s – 30 min window", () => {
-    expect(minutesToClampedSeconds(0, BREAK_BOUNDS)).toBe(30);
-    expect(minutesToClampedSeconds(45, BREAK_BOUNDS)).toBe(1800);
-    expect(minutesToClampedSeconds(0.5, BREAK_BOUNDS)).toBe(30);
+  it("keeps in-bounds idle-reset durations", () => {
+    expect(minutesToClampedSeconds(5, IDLE_RESET_BOUNDS)).toBe(300);
   });
-  it("allows grace of 0 and clamps its 10 min ceiling", () => {
-    expect(minutesToClampedSeconds(0, GRACE_BOUNDS)).toBe(0);
-    expect(minutesToClampedSeconds(20, GRACE_BOUNDS)).toBe(600);
-    expect(minutesToClampedSeconds(2, GRACE_BOUNDS)).toBe(120);
+  it("clamps idle-reset to its 1 min – 30 min window", () => {
+    expect(minutesToClampedSeconds(45, IDLE_RESET_BOUNDS)).toBe(1800);
+    expect(minutesToClampedSeconds(0.5, IDLE_RESET_BOUNDS)).toBe(60);
+  });
+  it("keeps in-bounds renudge durations", () => {
+    expect(minutesToClampedSeconds(15, RENUDGE_BOUNDS)).toBe(900);
+  });
+  it("clamps renudge to its 1 min – 60 min window", () => {
+    expect(minutesToClampedSeconds(120, RENUDGE_BOUNDS)).toBe(3600);
+    expect(minutesToClampedSeconds(0.1, RENUDGE_BOUNDS)).toBe(60);
   });
   it("empty/NaN field falls to the lower bound", () => {
     expect(minutesToClampedSeconds(NaN, SPRINT_BOUNDS)).toBe(60);
-    expect(minutesToClampedSeconds(NaN, GRACE_BOUNDS)).toBe(0);
+    expect(minutesToClampedSeconds(NaN, IDLE_RESET_BOUNDS)).toBe(60);
+    expect(minutesToClampedSeconds(NaN, RENUDGE_BOUNDS)).toBe(60);
   });
 });
 

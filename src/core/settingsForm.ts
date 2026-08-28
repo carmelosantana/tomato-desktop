@@ -13,10 +13,10 @@ export interface DurationBounds {
   readonly maxS: number;
 }
 
-/** Spec 1 duration bounds (seconds). */
+/** v2 Presence duration bounds (seconds). */
 export const SPRINT_BOUNDS: DurationBounds = { minS: 60, maxS: 3600 };
-export const BREAK_BOUNDS: DurationBounds = { minS: 30, maxS: 1800 };
-export const GRACE_BOUNDS: DurationBounds = { minS: 0, maxS: 600 };
+export const IDLE_RESET_BOUNDS: DurationBounds = { minS: 60, maxS: 1800 };
+export const RENUDGE_BOUNDS: DurationBounds = { minS: 60, maxS: 3600 };
 
 /** Main ⇄ settings channel: settings window → main, "config was saved, reload". */
 export const SETTINGS_SAVED = "tomato://settings-saved";
