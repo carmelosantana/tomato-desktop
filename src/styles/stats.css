@@ -1,6 +1,6 @@
-/* Stats window — the adherence "test instrument". Theme-aware via tokens.css
-   (light :root / dark [data-theme]); numbers use --font-mono. Charts are
-   hand-rolled inline SVG injected by stats.ts. */
+/* Stats window — the v2 "presence" summary. Theme-aware via tokens.css
+   (light :root / dark [data-theme]); numbers use --font-mono. The 7-day bar
+   chart is hand-rolled flex injected by stats.ts. */
 
 *,
 *::before,
@@ -27,6 +27,10 @@ body {
   padding: 18px 20px 22px;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* --- header ---------------------------------------------------------------- */
 .head {
   display: flex;
@@ -46,10 +50,26 @@ body {
   color: var(--text-muted);
 }
 
+/* --- empty state ----------------------------------------------------------- */
+.empty {
+  margin-top: 40px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.empty-title {
+  font-size: var(--size-label);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.empty-sub {
+  font-size: 13px;
+}
+
 /* --- stat tiles ------------------------------------------------------------ */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -73,77 +93,22 @@ body {
 }
 .val .sub {
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: 14px;
 }
-.val .glyph {
-  font-size: 13px;
-  color: var(--text-muted);
+.tile.active .val {
+  color: var(--tomato);
 }
 .tile.sprints .val {
   color: var(--focus);
 }
-.tile.breaks .val .taken {
-  color: var(--break);
-}
-.tile.overrun .val {
+.tile.longest .val {
   color: var(--overrun);
 }
-.tile.overrun.zero .val {
-  color: var(--text-muted);
-}
-.tile.streak .val {
-  color: var(--leaf);
-}
-
-/* --- day timeline ---------------------------------------------------------- */
-.section {
-  margin-top: 18px;
-}
-.section-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-.section-label .focus {
-  color: var(--focus);
-}
-.section-label .brk {
+.tile.breaks .val {
   color: var(--break);
 }
-.timeline {
-  position: relative;
-  height: 26px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-}
-.timeline .seg {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-}
-.timeline .seg.sprint {
-  background: var(--focus);
-}
-.timeline .seg.break {
-  background: var(--break);
-}
-.timeline-axis {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 5px;
-}
-.timeline-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-size: 12px;
-  color: var(--text-muted);
+.tile.adherence .val {
+  color: var(--leaf);
 }
 
 /* --- charts row ------------------------------------------------------------ */
@@ -163,44 +128,8 @@ body {
   font-weight: var(--weight-bold);
   margin-bottom: 10px;
 }
-.card.donut-card {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.donut-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.legend-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-}
-.legend-row .swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  display: inline-block;
-  flex: none;
-}
-.legend-row .swatch.taken {
-  background: var(--break);
-}
-.legend-row .swatch.skipped {
-  /* Color-blind safe: the skipped slice is disambiguated by its ✕ label, not by
-     color alone (the swatch is a plain fill — there is no hatch pattern). */
-  background: var(--chart-5);
-}
-.legend-row b {
-  font-family: var(--font-mono);
-}
-
 .card.week-card {
-  flex: 1.4;
+  flex: 1;
 }
 .bars {
   display: flex;

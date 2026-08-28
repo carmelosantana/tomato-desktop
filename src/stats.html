@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tomato — stats</title>
+    <!-- Critical: paint the themed background on first frame so the webview
+         never flashes white before the external stylesheets load. -->
+    <style>
+      html { background: #f7f3ee; color-scheme: light dark; }
+      @media (prefers-color-scheme: dark) { html { background: #171310; } }
+    </style>
     <link rel="stylesheet" href="styles/fonts.css" />
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/stats.css" />
@@ -21,54 +27,44 @@
         <div class="date" id="date">—</div>
       </div>
 
-      <!-- stat tiles -->
-      <div class="tiles">
-        <div class="tile sprints">
-          <div class="cap">● Sprints</div>
-          <div class="val" id="sprints">0</div>
-        </div>
-        <div class="tile breaks">
-          <div class="cap">◼ Breaks</div>
-          <div class="val" id="breaks"><span class="taken">0</span><span class="sub"> / 0 skip</span></div>
-        </div>
-        <div class="tile overrun">
-          <div class="cap">▲ Over-run</div>
-          <div class="val" id="overrun">0:00</div>
-        </div>
-        <div class="tile streak">
-          <div class="cap">✦ Streak</div>
-          <div class="val" id="streak">0</div>
-        </div>
+      <!-- empty state -->
+      <div class="empty" id="empty" hidden>
+        <div class="empty-title">No presence yet</div>
+        <div class="empty-sub">Start a sprint and your stats will show up here.</div>
       </div>
 
-      <!-- day timeline -->
-      <div class="section">
-        <div class="section-label">
-          Day timeline · <span class="focus">● focus</span> · <span class="brk">◼ break</span>
-        </div>
-        <div class="timeline" id="timeline" aria-label="Today's sprint and break timeline"></div>
-        <div class="timeline-axis" id="timeline-axis"></div>
-      </div>
-
-      <!-- charts row -->
-      <div class="charts">
-        <div class="card donut-card">
-          <div id="donut" aria-hidden="true"></div>
-          <div>
-            <div class="card-title">Breaks</div>
-            <div class="donut-legend">
-              <div class="legend-row">
-                <span class="swatch taken"></span>● Taken <b id="legend-taken">0</b>
-              </div>
-              <div class="legend-row">
-                <span class="swatch skipped"></span>✕ Skipped <b id="legend-skipped">0</b>
-              </div>
-            </div>
+      <!-- content (hidden in the empty state) -->
+      <div id="content">
+        <!-- stat tiles -->
+        <div class="tiles">
+          <div class="tile active">
+            <div class="cap">◷ Active</div>
+            <div class="val" id="active">0m</div>
+          </div>
+          <div class="tile sprints">
+            <div class="cap">● Sprints</div>
+            <div class="val" id="sprints">0</div>
+          </div>
+          <div class="tile longest">
+            <div class="cap">▲ Longest stretch</div>
+            <div class="val" id="longest">0m</div>
+          </div>
+          <div class="tile breaks">
+            <div class="cap">◼ Breaks</div>
+            <div class="val" id="breaks">0<span class="sub"> no breaks</span></div>
+          </div>
+          <div class="tile adherence">
+            <div class="cap">✦ Nudge adherence</div>
+            <div class="val" id="adherence">—</div>
           </div>
         </div>
-        <div class="card week-card">
-          <div class="card-title">This week · sprints</div>
-          <div class="bars" id="bars"></div>
+
+        <!-- 7-day chart -->
+        <div class="charts">
+          <div class="card week-card">
+            <div class="card-title">This week · active minutes</div>
+            <div class="bars" id="bars"></div>
+          </div>
         </div>
       </div>
     </div>

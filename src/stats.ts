@@ -1,39 +1,34 @@
-// Stats window script — the adherence "test instrument". On open it reads the
-// whole event log, folds it with the pure `aggregate` (Task 7), and renders
-// today's numbers plus three hand-rolled inline-SVG/flex charts.
+// Stats window script — the v2 "presence" summary. On open it reads the whole
+// event log and folds it with the pure `computeStats` (Task 5), rendering
+// today's presence metrics plus a hand-rolled 7-day active-minutes bar chart.
 //
 // IMPURE / webview-only: uses Tauri's fs (via jsonlEventStore) + the DOM + the
-// real clock. Not unit-tested; the pure pieces it leans on (aggregate,
-// donutSegments/scaleBars/timelineWindow/timelineSegments, formatMMSS) ARE
-// unit-tested in core. As a UI entry point, using the local clock here is fine.
+// real clock. Not unit-tested; the pure pieces it leans on (computeStats,
+// weekBars/scaleBars) ARE unit-tested in core. As a UI entry point, using the
+// local clock here is fine.
 
-import { aggregate } from "./core/stats";
-import type { DayStats } from "./core/stats";
+import { computeStats } from "./core/stats";
+import type { DayStats, WeekDay } from "./core/stats";
 import type { DomainEvent } from "./core/events";
 import { jsonlEventStore } from "./native/eventStore";
-import { formatMMSS } from "./core/format";
-import {
-  donutSegments,
-  scaleBars,
-  timelineWindow,
-  timelineSegments,
-} from "./core/statsChart";
+import { weekBars } from "./core/statsChart";
 import { applyTheme, resolveTheme } from "./core/theme";
-
-const SVGNS = "http://www.w3.org/2000/svg";
-const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
-
-/** Start of the local day, as UNIX seconds — the day boundary for aggregate. */
-function localTodayStartS(now = new Date()): number {
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.floor(midnight.getTime() / 1000);
-}
 
 const $ = (id: string): HTMLElement => {
   const el = document.getElementById(id);
   if (!el) throw new Error(`missing #${id}`);
   return el;
 };
+
+/** Format a non-negative seconds duration as compact h/m (e.g. "1h 23m", "9m",
+ *  "0m"). Sub-minute durations round down to whole minutes. */
+function formatHM(totalS: number): string {
+  const s = Math.max(0, Math.floor(totalS));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  return `${m}m`;
+}
 
 // --- theme (light/dark via tokens) -----------------------------------------
 function syncTheme(): void {
@@ -52,151 +47,59 @@ function renderDate(now: Date): void {
 }
 
 // --- stat tiles ------------------------------------------------------------
-function renderTiles(today: DayStats, streak: number): void {
+function renderTiles(today: DayStats): void {
+  // Active time today.
+  $("active").textContent = formatHM(today.activeS);
+
+  // Sprints completed today.
   $("sprints").textContent = String(today.sprints);
 
-  $("breaks").innerHTML = `<span class="taken">${today.breaksTaken}</span><span class="sub"> / ${today.breaksSkipped} skip</span>`;
+  // Longest single stretch today.
+  $("longest").textContent = formatHM(today.longestStretchS);
 
-  const overTile = $("overrun").closest(".tile");
-  const overS = today.overRunS;
-  $("overrun").innerHTML =
-    overS > 0
-      ? `+${formatMMSS(overS * 1000)} <span class="glyph">▲</span>`
-      : `0:00`;
-  overTile?.classList.toggle("zero", overS <= 0);
+  // Breaks taken + average length.
+  const avg = today.breaks > 0 ? `avg ${formatHM(today.avgBreakS)}` : "no breaks";
+  $("breaks").innerHTML = `${today.breaks}<span class="sub"> ${avg}</span>`;
 
-  $("streak").textContent = String(streak);
+  // Nudge adherence as a %. With no nudges today there is no meaningful ratio,
+  // so show an em dash rather than a misleading 0%.
+  $("adherence").textContent =
+    today.nudges > 0 ? `${Math.round(today.nudgeAdherence * 100)}%` : "—";
 }
 
-// --- day timeline ----------------------------------------------------------
-function renderTimeline(today: DayStats, todayStartS: number, nowS: number): void {
-  const strip = $("timeline");
-  const axis = $("timeline-axis");
-  strip.replaceChildren();
-  axis.replaceChildren();
-
-  if (today.timeline.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "timeline-empty";
-    empty.textContent = "No sprints yet today";
-    strip.appendChild(empty);
-    return;
-  }
-
-  const win = timelineWindow(today.timeline, todayStartS, nowS);
-  for (const seg of timelineSegments(today.timeline, win.startS, win.endS)) {
-    const el = document.createElement("div");
-    el.className = `seg ${seg.kind}`;
-    el.style.left = `${seg.leftPct}%`;
-    el.style.width = `${seg.widthPct}%`;
-    strip.appendChild(el);
-  }
-
-  // Axis: ~5 evenly spaced hour ticks across the window, labeled 9a / 1p style.
-  const ticks = 5;
-  for (let i = 0; i < ticks; i++) {
-    const t = win.startS + ((win.endS - win.startS) * i) / (ticks - 1);
-    const span = document.createElement("span");
-    span.textContent = hourLabel(new Date(t * 1000));
-    axis.appendChild(span);
-  }
-}
-
-function hourLabel(d: Date): string {
-  let h = d.getHours();
-  const suffix = h >= 12 ? "p" : "a";
-  h = h % 12;
-  if (h === 0) h = 12;
-  return `${h}${suffix}`;
-}
-
-// --- donut (breaks taken vs skipped) ---------------------------------------
-function renderDonut(today: DayStats): void {
-  $("legend-taken").textContent = String(today.breaksTaken);
-  $("legend-skipped").textContent = String(today.breaksSkipped);
-
-  const R = 46;
-  const size = 88;
-  const svg = document.createElementNS(SVGNS, "svg");
-  svg.setAttribute("width", String(size));
-  svg.setAttribute("height", String(size));
-  svg.setAttribute("viewBox", "0 0 120 120");
-
-  const { circumference, segments } = donutSegments(
-    [today.breaksTaken, today.breaksSkipped],
-    R,
-  );
-  // taken → --break, skipped → --chart-5 (paired with ✕ label for CVD safety).
-  const colors = ["var(--break)", "var(--chart-5)"];
-
-  if (segments.length === 0) {
-    // Empty state: a single neutral track ring.
-    svg.appendChild(ring(R, "var(--border)", `${circumference} 0`, 0));
-  } else {
-    for (const seg of segments) {
-      svg.appendChild(
-        ring(R, colors[seg.index], `${seg.length} ${seg.gap}`, seg.offset),
-      );
-    }
-  }
-  $("donut").replaceChildren(svg);
-}
-
-function ring(r: number, stroke: string, dashArray: string, dashOffset: number): SVGElement {
-  const c = document.createElementNS(SVGNS, "circle");
-  c.setAttribute("cx", "60");
-  c.setAttribute("cy", "60");
-  c.setAttribute("r", String(r));
-  c.setAttribute("fill", "none");
-  c.setAttribute("stroke", stroke);
-  c.setAttribute("stroke-width", "16");
-  c.setAttribute("stroke-dasharray", dashArray);
-  c.setAttribute("stroke-dashoffset", String(dashOffset));
-  c.setAttribute("transform", "rotate(-90 60 60)");
-  return c;
-}
-
-// --- 7-day sprints-per-day bars --------------------------------------------
-function renderBars(week: Array<{ date: string; sprints: number }>, now: Date): void {
+// --- 7-day active-minutes bars ---------------------------------------------
+function renderBars(week: WeekDay[]): void {
   const host = $("bars");
   host.replaceChildren();
-  const values = week.map((w) => w.sprints);
-  const heights = scaleBars(values, 54);
+  const bars = weekBars(week, 54);
 
-  week.forEach((_day, i) => {
-    const isToday = i === week.length - 1;
-    // Day letter from the LOCAL weekday of this bucket (offset back from today),
-    // rather than aggregate's UTC date label — robust in any timezone.
-    const offset = i - (week.length - 1);
-    const dow = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + offset,
-    ).getDay();
+  bars.forEach((bar, i) => {
+    const isToday = i === bars.length - 1;
+    const minutes = Math.round(bar.activeMinutes);
 
     const col = document.createElement("div");
     col.className = "bar-col";
 
     const count = document.createElement("div");
     count.className = "bar-count";
-    count.textContent = values[i] > 0 ? String(values[i]) : "";
+    count.textContent = minutes > 0 ? String(minutes) : "";
     col.appendChild(count);
 
     const track = document.createElement("div");
     track.className = "bar-track";
-    const bar = document.createElement("div");
-    if (values[i] <= 0) {
-      bar.className = "bar empty";
+    const el = document.createElement("div");
+    if (bar.activeMinutes <= 0) {
+      el.className = "bar empty";
     } else {
-      bar.className = isToday ? "bar today" : "bar";
-      bar.style.height = `${heights[i]}px`;
+      el.className = isToday ? "bar today" : "bar";
+      el.style.height = `${bar.heightPx}px`;
     }
-    track.appendChild(bar);
+    track.appendChild(el);
     col.appendChild(track);
 
     const label = document.createElement("span");
     label.className = isToday ? "bar-label today" : "bar-label";
-    label.textContent = DAY_LETTERS[dow];
+    label.textContent = bar.label;
     col.appendChild(label);
 
     host.appendChild(col);
@@ -209,7 +112,6 @@ async function render(): Promise<void> {
   const now = new Date();
   renderDate(now);
 
-  const todayStartS = localTodayStartS(now);
   const nowS = Math.floor(now.getTime() / 1000);
 
   let events: DomainEvent[];
@@ -220,11 +122,16 @@ async function render(): Promise<void> {
     events = [];
   }
 
-  const { today, streak, week } = aggregate(events, { todayStartS, nowS });
-  renderTiles(today, streak.current);
-  renderTimeline(today, todayStartS, nowS);
-  renderDonut(today);
-  renderBars(week, now);
+  const { today, week } = computeStats(events, nowS);
+
+  // Empty state: nothing recorded yet.
+  const isEmpty = events.length === 0;
+  $("empty").hidden = !isEmpty;
+  $("content").hidden = isEmpty;
+  if (isEmpty) return;
+
+  renderTiles(today);
+  renderBars(week);
 }
 
 if (typeof matchMedia === "function") {
