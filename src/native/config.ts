@@ -14,6 +14,14 @@
 import { mkdir, writeTextFile, readTextFile, exists } from "@tauri-apps/plugin-fs";
 import { configDir, join } from "@tauri-apps/api/path";
 
+import {
+  clamp,
+  SPRINT_BOUNDS,
+  IDLE_RESET_BOUNDS,
+  RENUDGE_BOUNDS,
+} from "../core/settingsForm";
+import type { DurationBounds } from "../core/settingsForm";
+
 /** Tomato v2 settings. All *_s fields are durations in SECONDS (see units note). */
 export interface TomatoConfig {
   /** Focus sprint length, seconds. */
@@ -37,6 +45,22 @@ export const DEFAULT_CONFIG: TomatoConfig = {
 const APP_DIR = "tomato";
 const CONFIG_FILE = "config.json";
 
+/**
+ * Sanitize one stored duration: a present, finite value is CLAMPED into its Spec
+ * bounds (so a hand-edited `config.json` with `renudge_every_s: 0`/blank/negative
+ * can't flow through unclamped and hang the nudge loop); an absent or non-finite
+ * value falls back to the default rather than being clamped up to the minimum.
+ */
+function sanitizeDuration(
+  raw: number | undefined,
+  bounds: DurationBounds,
+  def: number,
+): number {
+  return typeof raw === "number" && Number.isFinite(raw)
+    ? clamp(raw, bounds.minS, bounds.maxS)
+    : def;
+}
+
 async function configPath(ensureDir: boolean): Promise<string> {
   const dir = await join(await configDir(), APP_DIR);
   if (ensureDir) await mkdir(dir, { recursive: true });
@@ -44,10 +68,12 @@ async function configPath(ensureDir: boolean): Promise<string> {
 }
 
 /**
- * Load config and return a CLEANED object: for each known key, the stored value
- * when present else the default. Retired keys (e.g. v1's `break_s`, `grace_s`,
- * `early_grace_s`, `mode`) are silently ignored — never spread through. Returns
- * the full defaults when the file is absent or corrupt.
+ * Load config and return a CLEANED object: each known duration is CLAMPED into
+ * its Spec bounds when present (a hand-edited file can't ship an out-of-range or
+ * zero/negative cadence), and falls back to the default when absent or
+ * non-finite. Retired keys (e.g. v1's `break_s`, `grace_s`, `early_grace_s`,
+ * `mode`) are silently ignored — never spread through. Returns the full defaults
+ * when the file is absent or corrupt.
  */
 export async function loadConfig(): Promise<TomatoConfig> {
   const path = await configPath(false);
@@ -55,9 +81,13 @@ export async function loadConfig(): Promise<TomatoConfig> {
   try {
     const raw = JSON.parse(await readTextFile(path)) as Partial<TomatoConfig>;
     return {
-      sprint_s: raw.sprint_s ?? DEFAULT_CONFIG.sprint_s,
-      idle_reset_s: raw.idle_reset_s ?? DEFAULT_CONFIG.idle_reset_s,
-      renudge_every_s: raw.renudge_every_s ?? DEFAULT_CONFIG.renudge_every_s,
+      sprint_s: sanitizeDuration(raw.sprint_s, SPRINT_BOUNDS, DEFAULT_CONFIG.sprint_s),
+      idle_reset_s: sanitizeDuration(raw.idle_reset_s, IDLE_RESET_BOUNDS, DEFAULT_CONFIG.idle_reset_s),
+      renudge_every_s: sanitizeDuration(
+        raw.renudge_every_s,
+        RENUDGE_BOUNDS,
+        DEFAULT_CONFIG.renudge_every_s,
+      ),
       onboarded: raw.onboarded ?? DEFAULT_CONFIG.onboarded,
     };
   } catch {

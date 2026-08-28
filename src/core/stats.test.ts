@@ -114,6 +114,23 @@ describe("computeStats — nudgeAdherence", () => {
     expect(computeStats(evs, nowS).today.nudgeAdherence).toBe(1);
   });
 
+  it("exposes nudgeAdherenceN, the denominator (boundary nudges with an ended sprint)", () => {
+    // Fixture: S1, S2, S3 each have a boundary nudge and a sprint_ended → N = 3.
+    expect(computeStats(fixture, nowS).today.nudgeAdherenceN).toBe(3);
+  });
+
+  it("nudgeAdherenceN is 0 when there is no adherence data (distinguishes from 0%)", () => {
+    // A boundary nudge whose sprint never ended is NOT in the denominator.
+    const evs: DomainEvent[] = [
+      { event: "sprint_started", ts: at(2026, 7, 23, 10, 0), sprint_id: "X", trigger: "activity" },
+      { event: "nudge", ts: at(2026, 7, 23, 10, 15), sprint_id: "X", active_s: 900, index: 0 },
+      // never ends
+    ];
+    const { nudgeAdherence, nudgeAdherenceN } = computeStats(evs, nowS).today;
+    expect(nudgeAdherenceN).toBe(0);
+    expect(nudgeAdherence).toBe(0);
+  });
+
   it("does not count paused/manual ends toward the numerator", () => {
     const evs: DomainEvent[] = [
       { event: "sprint_started", ts: at(2026, 7, 23, 9, 0), sprint_id: "P", trigger: "activity" },
@@ -150,6 +167,7 @@ describe("computeStats — empty log", () => {
       avgBreakS: 0,
       nudges: 0,
       nudgeAdherence: 0,
+      nudgeAdherenceN: 0,
     });
     expect(week).toHaveLength(7);
     expect(week.every((d) => d.activeS === 0 && d.activeMinutes === 0)).toBe(true);

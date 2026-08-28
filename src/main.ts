@@ -126,14 +126,15 @@ async function main(): Promise<void> {
   // React to raw presence events. In v2 the only side effect is the nudge: a
   // quiet, DND-aware OS notification. No windows, never blocking.
   async function react(raw: PresenceEvent[]): Promise<void> {
-    for (const e of raw) {
-      if (e.type !== "nudge") continue;
-      if (decideNudge(await dndDetector.current()) === "notify") {
-        await notify(
-          "Tomato",
-          "You've been focused a while — a good moment to step away.",
-        );
-      }
+    // Coalesce: a single batch may carry catch-up nudges (index 0,1,2…). Fire at
+    // most ONE notification for the whole batch, and check DND only once, so a
+    // burst can never become a notification storm.
+    if (!raw.some((e) => e.type === "nudge")) return;
+    if (decideNudge(await dndDetector.current()) === "notify") {
+      await notify(
+        "Tomato",
+        "You've been focused a while — a good moment to step away.",
+      );
     }
   }
 

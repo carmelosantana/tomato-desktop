@@ -159,7 +159,11 @@ export class PresenceMachine {
         index: this.nudgeIndex,
       });
       this.nudgeIndex += 1;
-      this.nextNudgeAt += this.config.renudgeEveryMs;
+      // Guard the cadence: a zero/negative renudgeEveryMs (from a hand-edited
+      // config that slipped past clamping) would otherwise never advance
+      // nextNudgeAt and spin this loop forever. Step at least 1ms.
+      const step = Math.max(1, this.config.renudgeEveryMs);
+      this.nextNudgeAt += step;
     }
   }
 

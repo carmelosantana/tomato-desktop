@@ -87,11 +87,12 @@ function nearestSize(size: number): number {
 }
 
 /**
- * Bundled URL for the static kit icon of a resting state (`idle` or `break`) at
- * the size nearest to `size`. The caller fetches it and builds an Image via
- * `Image.fromBytes(...)`.
+ * Bundled URL for the static `idle` kit icon at the size nearest to `size`. The
+ * caller fetches it and builds an Image via `Image.fromBytes(...)`. (v2 has only
+ * the idle resting icon; the `tray-break-*` assets were removed with the retired
+ * break model.)
  */
-export function staticIconUrl(state: "idle" | "break", size: number): string {
+export function staticIconUrl(state: "idle", size: number): string {
   const px = nearestSize(size);
   const suffix = `/tray-${state}-${px}.png`;
   const key = Object.keys(STATIC_ICONS).find((k) => k.endsWith(suffix));

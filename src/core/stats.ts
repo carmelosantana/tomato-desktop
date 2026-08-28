@@ -33,6 +33,12 @@ export interface DayStats {
    * of the nudge. 0 when the denominator is 0 (no divide-by-zero).
    */
   nudgeAdherence: number;
+  /**
+   * Denominator behind `nudgeAdherence`: the count of today's boundary (index 0)
+   * nudges whose sprint has ended. Lets the UI distinguish "no data" (0) from a
+   * genuine 0% adherence, so it can render an em dash instead of a misleading 0%.
+   */
+  nudgeAdherenceN: number;
 }
 
 export interface WeekDay {
@@ -152,6 +158,7 @@ export function computeStats(
       avgBreakS,
       nudges,
       nudgeAdherence,
+      nudgeAdherenceN: denom,
     },
     week,
   };

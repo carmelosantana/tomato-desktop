@@ -61,10 +61,12 @@ function renderTiles(today: DayStats): void {
   const avg = today.breaks > 0 ? `avg ${formatHM(today.avgBreakS)}` : "no breaks";
   $("breaks").innerHTML = `${today.breaks}<span class="sub"> ${avg}</span>`;
 
-  // Nudge adherence as a %. With no nudges today there is no meaningful ratio,
-  // so show an em dash rather than a misleading 0%.
+  // Nudge adherence as a %. Guard on the adherence DENOMINATOR (boundary nudges
+  // whose sprint has ended), not the raw nudge count: a day with nudges but no
+  // resolved boundaries (denominator 0) has no meaningful ratio, so show an em
+  // dash rather than a misleading 0%.
   $("adherence").textContent =
-    today.nudges > 0 ? `${Math.round(today.nudgeAdherence * 100)}%` : "—";
+    today.nudgeAdherenceN > 0 ? `${Math.round(today.nudgeAdherence * 100)}%` : "—";
 }
 
 // --- 7-day active-minutes bars ---------------------------------------------
@@ -88,7 +90,10 @@ function renderBars(week: WeekDay[]): void {
     const track = document.createElement("div");
     track.className = "bar-track";
     const el = document.createElement("div");
-    if (bar.activeMinutes <= 0) {
+    // Use the SAME rounded-minutes threshold for drawing the bar as for the count
+    // label. A sub-30s day (rounds to 0m) then shows neither a misleading bar nor
+    // a blank number — bar and label stay in lockstep.
+    if (minutes <= 0) {
       el.className = "bar empty";
     } else {
       el.className = isToday ? "bar today" : "bar";

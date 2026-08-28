@@ -28,8 +28,8 @@
     "active": true,
     "targets": ["deb", "appimage"],
     "category": "Utility",
-    "shortDescription": "Agentic Pomodoro timer for your tray.",
-    "longDescription": "Tomato is an agentic Pomodoro timer that lives in your system tray, running focus and break cadence with desktop notifications.",
+    "shortDescription": "A gentle presence-aware focus companion for your tray.",
+    "longDescription": "Tomato is a gentle, presence-aware focus companion that lives in your system tray. It notices when you've been focused for a while and quietly nudges you to step away with a soft desktop notification — no forced breaks, no blocking, no timers to babysit.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

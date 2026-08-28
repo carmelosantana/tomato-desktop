@@ -4,10 +4,10 @@
 // unit-tested (the Tauri runtime is unavailable under node/vitest). Verify
 // manually in-app.
 //
-// Used by the boundary UX for the two "notify only" paths:
-//   - soft mode at the boundary (no window, just a heads-up), and
-//   - the DND-degrade branch of decideNudge ("notification"), where the break
-//     card is suppressed and we ping quietly instead.
+// Used by the v2 presence companion's single side effect: the gentle nudge. Once
+// a sprint clears the soft boundary the machine emits a nudge, and (when DND
+// allows, per decideNudge) we send one quiet OS notification suggesting a break.
+// There is no window, no break card, and nothing is ever blocked or forced.
 
 import {
   isPermissionGranted,

@@ -203,6 +203,23 @@ describe("PresenceMachine — manual mode, idleMs === null (case 6)", () => {
   });
 });
 
+describe("PresenceMachine — degenerate renudge cadence (M1a: no infinite loop)", () => {
+  it("a zero renudge cadence emits a BOUNDED number of nudges over a finite tick (does not hang)", () => {
+    // renudgeEveryMs: 0 would make `nextNudgeAt += 0` spin forever without the
+    // guarded step. One tick spanning the boundary must return a finite array.
+    const p = new PresenceMachine({ ...cfg, renudgeEveryMs: 0 });
+    p.tick(0, 0); // sprintStartAt = 0
+    // One tick crossing the boundary. With the guarded step (>= 1ms) the loop
+    // must terminate; assert a finite, bounded result rather than hanging.
+    const es = p.tick(cfg.sprintMs, 1_000);
+    expect(Array.isArray(es)).toBe(true);
+    expect(es.length).toBeLessThanOrEqual(cfg.sprintMs + 2);
+    // The boundary nudge (index 0) is present.
+    expect(only(es, "nudge").length).toBeGreaterThanOrEqual(1);
+    expect(es.find((e) => e.type === "nudge")!.type === "nudge" && (es.find((e) => e.type === "nudge") as PresenceEvent & { type: "nudge" }).index).toBe(0);
+  });
+});
+
 describe("PresenceMachine — snapshot projection", () => {
   it("projects activeMs/overMs while active and zeroes them otherwise", () => {
     const p = new PresenceMachine(cfg);
@@ -227,6 +244,11 @@ describe("PresenceMachine — setConfig between sprints", () => {
     // Boundary now at 120s → nudge 0 fires there (also clears the 60s floor).
     const es = p.tick(120_000, 1_000);
     expect(types(es)).toEqual(["sprint-started", "nudge"]);
-    expect(es.find((e) => e.type === "nudge")!.type === "nudge").toBe(true);
+    // Prove setConfig actually drove the boundary: the nudge lands at the NEW
+    // 120s sprintMs (not the original 1_500_000ms), with matching at/activeMs.
+    const n0 = es.find((e) => e.type === "nudge")!;
+    expect(n0.type === "nudge" && n0.index).toBe(0);
+    expect(n0.type === "nudge" && n0.at).toBe(120_000);
+    expect(n0.type === "nudge" && n0.activeMs).toBe(120_000);
   });
 });

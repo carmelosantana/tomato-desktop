@@ -1,4 +1,6 @@
-// Pure time formatting for the boundary UX countdowns. No Tauri/DOM dependency.
+// Pure M:SS time formatting. No Tauri/DOM dependency. (Retained utility: the v2
+// presence companion has no countdown UI, so this is currently unused — kept
+// deliberately, its removal is a deferred cleanup, not part of this fix wave.)
 
 /**
  * Format a non-negative millisecond duration as M:SS (minutes uncapped, seconds
