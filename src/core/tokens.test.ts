@@ -6,17 +6,16 @@ import kit from "../../docs/design/tomato-tokens.json";
 
 describe("RING_TOKENS mirrors tomato-tokens.json", () => {
   for (const mode of ["light", "dark"] as const) {
-    it(`${mode}: track = neutral.border, focus/grace/overrun = state.*`, () => {
+    it(`${mode}: track = neutral.border, focus/overrun = state.*`, () => {
       expect(RING_TOKENS[mode].track).toBe(kit.color[mode].neutral.border.$value);
       expect(RING_TOKENS[mode].focus).toBe(kit.color[mode].state.focus.$value);
-      expect(RING_TOKENS[mode].grace).toBe(kit.color[mode].state.grace.$value);
       expect(RING_TOKENS[mode].overrun).toBe(kit.color[mode].state.overrun.$value);
     });
   }
 
   it("pins the exact hex values (drift guard)", () => {
     expect(RING_TOKENS.light.focus).toBe("#128a7a");
-    expect(RING_TOKENS.dark.grace).toBe("#e5a23e");
+    expect(RING_TOKENS.dark.overrun).toBe("#eb5a4d");
     expect(RING_TOKENS.light.track).toBe("#e6ddd2");
   });
 

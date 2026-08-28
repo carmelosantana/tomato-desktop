@@ -15,17 +15,15 @@ export type Theme = "light" | "dark";
  * resolves to the track/border token, not a `state` token — so the color-role →
  * token mapping lives in native/trayIcon.ts).
  */
-export type RingProgressToken = "focus" | "grace" | "overrun";
+export type RingProgressToken = "focus" | "overrun";
 
-/** The four colors the ring renderer needs, per theme. */
+/** The three colors the ring renderer needs, per theme. */
 export interface RingTokens {
   /** Unfilled ring track — mirrors color.<mode>.neutral.border. */
   track: string;
-  /** Focus arc — mirrors color.<mode>.state.focus (glyph ●). */
+  /** Focus arc — mirrors color.<mode>.state.focus. */
   focus: string;
-  /** Grace arc — mirrors color.<mode>.state.grace (glyph ◑). */
-  grace: string;
-  /** Over-run arc — mirrors color.<mode>.state.overrun (glyph ▲). */
+  /** Over-run arc — mirrors color.<mode>.state.overrun. */
   overrun: string;
 }
 
@@ -33,20 +31,17 @@ export interface RingTokens {
  * Light + dark ring colors, copied byte-for-byte from tomato-tokens.json:
  *  - track   ← color.<mode>.neutral.border
  *  - focus   ← color.<mode>.state.focus
- *  - grace   ← color.<mode>.state.grace
  *  - overrun ← color.<mode>.state.overrun
  */
 export const RING_TOKENS: Record<Theme, RingTokens> = {
   light: {
     track: "#e6ddd2",
     focus: "#128a7a",
-    grace: "#c98420",
     overrun: "#cf3b30",
   },
   dark: {
     track: "#39312a",
     focus: "#2bb6a2",
-    grace: "#e5a23e",
     overrun: "#eb5a4d",
   },
 };
