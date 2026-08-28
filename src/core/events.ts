@@ -1,11 +1,11 @@
-// Spec 1 domain events — the persisted event vocabulary and the pure mapper from
-// the timer's lightweight TimerEvents. This is the seam Spec 2 (and the local
-// JSONL store + stats) consume. No native/DOM/network dependency here.
+// Tomato v2 "Presence Companion" — the persisted event vocabulary and the pure
+// mapper from the PresenceMachine's lightweight PresenceEvents. This is the seam
+// the local JSONL store + stats consume. No native/DOM/network dependency here.
 //
-// Envelope: { event, ts, sprint_id, ... }; `ts` is UNIX SECONDS; a break carries
-// its parent sprint_id. See docs/design/uploads/2026-08-23-agentic-15min-window-spec.md.
+// Envelope: { event, ts, sprint_id, ... }; `ts` is UNIX SECONDS. All PresenceEvent
+// millisecond fields are converted to seconds by flooring.
 
-import type { TimerEvent } from "./timer";
+import type { PresenceEvent } from "./presence";
 
 interface Envelope {
   ts: number;
@@ -13,14 +13,14 @@ interface Envelope {
 }
 
 export type DomainEvent =
-  | (Envelope & { event: "sprint_started"; planned_s: number; enforcement_mode: "enforced" | "soft" })
-  | (Envelope & { event: "boundary_reached" })
-  | (Envelope & { event: "grace_started"; grace_s: number; streak_index: number })
-  | (Envelope & { event: "grace_ended"; actual_grace_s: number; ended_by: "user" | "timeout" })
-  | (Envelope & { event: "break_started"; break_id: string; planned_s: number })
-  | (Envelope & { event: "break_completed"; break_id: string; actual_s: number })
-  | (Envelope & { event: "break_skipped"; break_id?: string; after_s: number })
-  | (Envelope & { event: "sprint_ended"; actual_focus_s: number; over_run_s: number });
+  | (Envelope & { event: "sprint_started"; trigger: "activity" | "manual" })
+  | (Envelope & { event: "nudge"; active_s: number; index: number })
+  | (Envelope & {
+      event: "sprint_ended";
+      active_s: number;
+      over_s: number;
+      ended_by: "idle_reset" | "paused" | "manual";
+    });
 
 /** Sink for persisting domain events. The JSONL impl lands in a later task. */
 export interface EventSink {
@@ -36,82 +36,46 @@ export class InMemoryEventSink implements EventSink {
 }
 
 /**
- * Context threaded into the pure mapper. Ids and the timer-state–derived numeric
- * fields (durations, over-run) are passed IN by the caller — the mapper never
- * generates uuids or reads the clock, so mapping is deterministic. `ts` is derived
- * per event from the TimerEvent's own `at` (ms → seconds), not from a live clock.
+ * Context threaded into the pure mapper. The sprint id is passed IN by the caller
+ * — the mapper never generates uuids or reads the clock, so mapping is
+ * deterministic. `ts` is derived per event from the PresenceEvent's own `at`
+ * (ms → seconds). `trigger` is a fallback for sprint_started; the event's own
+ * trigger wins when present (which it always is on `sprint-started`).
  */
 export interface MapContext {
-  /** Per-sprint id; a break carries its parent sprint_id. */
+  /** Per-sprint id stamped onto every mapped event's envelope. */
   sprintId: string;
-  /** Per-break id; absent when no break was in play (e.g. skipped before start). */
-  breakId?: string;
-  enforcementMode: "enforced" | "soft";
-  /** planned_s for sprint_started. */
-  plannedFocusS: number;
-  /** planned_s for break_started. */
-  plannedBreakS: number;
-  /** streak_index for grace_started. */
-  streakIndex: number;
-  /** actual_grace_s for grace_ended. */
-  actualGraceS?: number;
-  /** actual_s for break_completed. */
-  actualBreakS?: number;
-  /** after_s for break_skipped. */
-  afterS?: number;
-  /** actual_focus_s for sprint_ended. */
-  actualFocusS?: number;
-  /** over_run_s for sprint_ended. */
-  overRunS?: number;
+  /** Fallback trigger for sprint_started; the event's own trigger takes priority. */
+  trigger: "activity" | "manual";
 }
 
 const toSeconds = (ms: number): number => Math.floor(ms / 1000);
 
 /**
- * Pure mapping from the timer's lightweight events to persisted DomainEvents.
- * TOTAL over the TimerEvent union: every variant is handled. `nudge` is a UI-only
- * boundary hint with no Spec 1 domain event, so it maps to nothing.
+ * Pure mapping from the PresenceMachine's lightweight events to persisted
+ * DomainEvents. TOTAL over the PresenceEvent union: every variant is handled.
  */
-export function toDomainEvents(raw: TimerEvent[], ctx: MapContext): DomainEvent[] {
+export function toDomainEvents(raw: PresenceEvent[], ctx: MapContext): DomainEvent[] {
   const out: DomainEvent[] = [];
   for (const e of raw) {
     const ts = toSeconds(e.at);
     const sprint_id = ctx.sprintId;
     switch (e.type) {
-      case "focus-started":
-        out.push({ event: "sprint_started", ts, sprint_id, planned_s: ctx.plannedFocusS, enforcement_mode: ctx.enforcementMode });
-        break;
-      case "boundary-reached":
-        out.push({ event: "boundary_reached", ts, sprint_id });
-        break;
-      case "grace-started":
-        out.push({ event: "grace_started", ts, sprint_id, grace_s: toSeconds(e.graceMs), streak_index: ctx.streakIndex });
-        break;
-      case "grace-ended":
-        out.push({ event: "grace_ended", ts, sprint_id, actual_grace_s: ctx.actualGraceS ?? 0, ended_by: e.ended_by });
-        break;
-      case "break-started":
-        out.push({ event: "break_started", ts, sprint_id, break_id: ctx.breakId ?? "", planned_s: ctx.plannedBreakS });
-        break;
-      case "break-completed":
-        out.push({ event: "break_completed", ts, sprint_id, break_id: ctx.breakId ?? "", actual_s: ctx.actualBreakS ?? 0 });
-        break;
-      case "break-skipped": {
-        const skipped: DomainEvent = { event: "break_skipped", ts, sprint_id, after_s: ctx.afterS ?? 0 };
-        if (ctx.breakId !== undefined) skipped.break_id = ctx.breakId;
-        out.push(skipped);
-        break;
-      }
-      case "sprint-ended":
-        out.push({ event: "sprint_ended", ts, sprint_id, actual_focus_s: ctx.actualFocusS ?? 0, over_run_s: ctx.overRunS ?? 0 });
-        break;
-      case "stopped":
-        // UI-only lifecycle signal (closes boundary windows). The sprint's close
-        // rides on the separate `sprint-ended` emitted at focus-end, so `stopped`
-        // maps to no Spec 1 domain event.
+      case "sprint-started":
+        out.push({ event: "sprint_started", ts, sprint_id, trigger: e.trigger ?? ctx.trigger });
         break;
       case "nudge":
-        // UI-only boundary hint; no Spec 1 domain event.
+        out.push({ event: "nudge", ts, sprint_id, active_s: toSeconds(e.activeMs), index: e.index });
+        break;
+      case "sprint-ended":
+        out.push({
+          event: "sprint_ended",
+          ts,
+          sprint_id,
+          active_s: toSeconds(e.activeMs),
+          over_s: toSeconds(e.overMs),
+          ended_by: e.endedBy,
+        });
         break;
       default: {
         const _exhaustive: never = e;
