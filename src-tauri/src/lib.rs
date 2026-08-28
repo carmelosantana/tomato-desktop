@@ -1,5 +1,7 @@
 use std::process::Command;
 
+mod presence;
+
 /// Report the desktop Do-Not-Disturb state by reading GNOME's notification
 /// banner setting.
 ///
@@ -34,6 +36,14 @@ fn quit(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+/// Seconds since the last user input (keyboard/mouse), from the platform's
+/// presence provider, or `None` when no provider is available so the UI can
+/// fall back to honest manual mode.
+#[tauri::command]
+fn idle_seconds() -> Option<f64> {
+    presence::idle_seconds()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -45,7 +55,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        .invoke_handler(tauri::generate_handler![dnd_state, quit])
+        .invoke_handler(tauri::generate_handler![dnd_state, quit, idle_seconds])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
