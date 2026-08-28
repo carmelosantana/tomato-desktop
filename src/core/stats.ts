@@ -1,126 +1,158 @@
-// Spec 1 stats aggregator — the "test instrument" that folds the persisted event
-// log into the adherence view. Pure function, no native/DOM/network/clock access:
-// the caller supplies the day boundary (`todayStartS`) and `nowS`, so bucketing is
-// deterministic and testable. See docs/design/uploads/2026-08-23-agentic-15min-window-spec.md.
+// Tomato v2 "Presence Companion" stats aggregator — the pure fold from the
+// persisted DomainEvent log into today's presence summary plus a 7-day active
+// series. No native/DOM/network access: the caller supplies `nowS` (UNIX
+// seconds) and, optionally, the adherence window; "today" and the week buckets
+// are derived by LOCAL calendar day (same approach the stats window uses).
 
 import type { DomainEvent } from "./events";
 
+type SprintEnded = Extract<DomainEvent, { event: "sprint_ended" }>;
+type SprintStarted = Extract<DomainEvent, { event: "sprint_started" }>;
+type Nudge = Extract<DomainEvent, { event: "nudge" }>;
+
 export interface DayStats {
+  /** Local-day label of today, YYYY-MM-DD. */
   date: string;
+  /** Sum of today's sprint_ended.active_s. */
+  activeS: number;
+  /** Count of today's sprint_ended. */
   sprints: number;
-  breaksTaken: number;
-  breaksSkipped: number;
-  overRunS: number;
-  timeline: Array<{ kind: "sprint" | "break"; startS: number; endS: number }>;
+  /** Max active_s among today's sprint_ended (0 if none). */
+  longestStretchS: number;
+  /** Count of gaps between a sprint_ended and the next sprint_started, same local day. */
+  breaks: number;
+  /** Sum of those gap durations. */
+  totalBreakS: number;
+  /** totalBreakS / breaks, or 0 when there are no breaks. */
+  avgBreakS: number;
+  /** Count of today's nudge events (boundary + re-nudges). */
+  nudges: number;
+  /**
+   * Fraction of today's boundary nudges (index 0) — that belong to a sprint with
+   * a sprint_ended — whose sprint ended via `idle_reset` within `adherenceWindowS`
+   * of the nudge. 0 when the denominator is 0 (no divide-by-zero).
+   */
+  nudgeAdherence: number;
 }
 
-export interface Streak {
-  current: number;
+export interface WeekDay {
+  /** Local-day label, YYYY-MM-DD. */
+  date: string;
+  /** Sum of that day's sprint_ended.active_s. */
+  activeS: number;
+  /** activeS expressed in minutes (for the bar chart). */
+  activeMinutes: number;
 }
 
-const DAY_S = 86_400;
+export interface Stats {
+  today: DayStats;
+  /** 7 buckets ending today (index 6 = today), oldest first. */
+  week: WeekDay[];
+}
 
-/** Label a UTC-midnight day boundary as YYYY-MM-DD. Dates are labeled in UTC; the
- *  caller decides which second is "midnight" via todayStartS. */
-const dateLabel = (startOfDayS: number): string =>
-  new Date(startOfDayS * 1000).toISOString().slice(0, 10);
+const DEFAULT_ADHERENCE_WINDOW_S = 600;
+const WEEK_DAYS = 7;
+
+const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+/** UNIX-seconds of local midnight for the day containing `ts`. */
+function startOfLocalDayS(ts: number): number {
+  const d = new Date(ts * 1000);
+  return Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000);
+}
+
+/** Local-day label (YYYY-MM-DD) for the day containing `ts`. */
+function localDateLabel(ts: number): string {
+  const d = new Date(ts * 1000);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
 
 /**
- * Fold the event log into today's adherence stats, the current streak, and a
- * 7-day sprints-per-day array. Pure over the in-memory `events`.
- *
- * - sprints (today): `sprint_started` events falling within [todayStartS, +1 day).
- * - breaksTaken / breaksSkipped: `break_completed` / `break_skipped` counts (today).
- * - overRunS: sum of `sprint_ended.over_run_s` (today only).
- * - timeline: sprint/break intervals whose START falls today, paired start↔end by
- *   id (sprint_id / break_id) and ordered by start. In-progress intervals (no end)
- *   are omitted.
- * - streak.current: the trailing run of sprints (whole log, chronological) that were
- *   each followed by a TAKEN (completed) break. A skipped or absent break resets it,
- *   so a still-in-progress final sprint contributes 0 until its break completes.
- * - week: 7 buckets ending today; each `sprints` = `sprint_started` count that day.
+ * Fold the DomainEvent log into today's presence summary and a 7-day active
+ * series. Pure over the in-memory `events`; "today" and the week are bucketed by
+ * local calendar day relative to `nowS`.
  */
-export function aggregate(
+export function computeStats(
   events: DomainEvent[],
-  opts: { todayStartS: number; nowS: number },
-): { today: DayStats; streak: Streak; week: Array<{ date: string; sprints: number }> } {
-  const { todayStartS } = opts;
-  const todayEndS = todayStartS + DAY_S;
-  const isToday = (ts: number): boolean => ts >= todayStartS && ts < todayEndS;
+  nowS: number,
+  opts?: { adherenceWindowS?: number },
+): Stats {
+  const adherenceWindowS = opts?.adherenceWindowS ?? DEFAULT_ADHERENCE_WINDOW_S;
+  const todayStartS = startOfLocalDayS(nowS);
+  const isToday = (ts: number): boolean => startOfLocalDayS(ts) === todayStartS;
 
-  // --- today counts ---
-  let sprints = 0;
-  let breaksTaken = 0;
-  let breaksSkipped = 0;
-  let overRunS = 0;
-  for (const e of events) {
-    if (!isToday(e.ts)) continue;
-    switch (e.event) {
-      case "sprint_started":
-        sprints++;
-        break;
-      case "break_completed":
-        breaksTaken++;
-        break;
-      case "break_skipped":
-        breaksSkipped++;
-        break;
-      case "sprint_ended":
-        overRunS += e.over_run_s;
-        break;
+  const ended = events.filter((e): e is SprintEnded => e.event === "sprint_ended");
+  const started = events.filter((e): e is SprintStarted => e.event === "sprint_started");
+  const nudgeEvents = events.filter((e): e is Nudge => e.event === "nudge");
+
+  // --- today's sprint_ended-derived tiles ---
+  const endedToday = ended.filter((e) => isToday(e.ts));
+  const activeS = endedToday.reduce((sum, e) => sum + e.active_s, 0);
+  const sprints = endedToday.length;
+  const longestStretchS = endedToday.reduce((max, e) => Math.max(max, e.active_s), 0);
+
+  // --- breaks: gap from a today sprint_ended to the next sprint_started (same day) ---
+  const startsAsc = [...started].sort((a, b) => a.ts - b.ts);
+  let breaks = 0;
+  let totalBreakS = 0;
+  for (const end of endedToday) {
+    const next = startsAsc.find((s) => s.ts > end.ts);
+    if (next && startOfLocalDayS(next.ts) === startOfLocalDayS(end.ts)) {
+      breaks++;
+      totalBreakS += next.ts - end.ts;
     }
   }
+  const avgBreakS = breaks > 0 ? totalBreakS / breaks : 0;
 
-  // --- today timeline: pair start↔end by id, keep intervals starting today ---
-  const sprintStart = new Map<string, number>();
-  const breakStart = new Map<string, number>();
-  const timeline: DayStats["timeline"] = [];
-  for (const e of events) {
-    switch (e.event) {
-      case "sprint_started":
-        sprintStart.set(e.sprint_id, e.ts);
-        break;
-      case "sprint_ended": {
-        const s = sprintStart.get(e.sprint_id);
-        if (s !== undefined && isToday(s)) timeline.push({ kind: "sprint", startS: s, endS: e.ts });
-        break;
-      }
-      case "break_started":
-        breakStart.set(e.break_id, e.ts);
-        break;
-      case "break_completed": {
-        const s = breakStart.get(e.break_id);
-        if (s !== undefined && isToday(s)) timeline.push({ kind: "break", startS: s, endS: e.ts });
-        break;
-      }
+  // --- nudges (today) ---
+  const nudgesToday = nudgeEvents.filter((n) => isToday(n.ts));
+  const nudges = nudgesToday.length;
+
+  // --- nudge adherence: boundary (index 0) nudges paired to their sprint_ended ---
+  const endBySprint = new Map<string, SprintEnded>();
+  for (const e of ended) endBySprint.set(e.sprint_id, e); // last end for a sprint id wins
+  let denom = 0;
+  let numer = 0;
+  for (const n of nudgesToday) {
+    if (n.index !== 0) continue; // only boundary nudges; re-nudges ignored
+    const end = endBySprint.get(n.sprint_id);
+    if (!end) continue; // sprint never ended → not in the denominator
+    denom++;
+    if (end.ended_by === "idle_reset" && end.ts >= n.ts && end.ts - n.ts <= adherenceWindowS) {
+      numer++;
     }
   }
-  timeline.sort((a, b) => a.startS - b.startS);
+  const nudgeAdherence = denom > 0 ? numer / denom : 0;
 
-  // --- streak: trailing run of sprints each followed by a taken break ---
-  const takenBySprint = new Set<string>();
-  for (const e of events) if (e.event === "break_completed") takenBySprint.add(e.sprint_id);
-  let current = 0;
-  for (const e of events) {
-    if (e.event !== "sprint_started") continue;
-    current = takenBySprint.has(e.sprint_id) ? current + 1 : 0;
-  }
-
-  // --- week: sprints per day, 7 buckets ending today ---
-  const week: Array<{ date: string; sprints: number }> = [];
-  for (let offset = -6; offset <= 0; offset++) {
-    const dayStart = todayStartS + offset * DAY_S;
-    const dayEnd = dayStart + DAY_S;
-    let count = 0;
-    for (const e of events) {
-      if (e.event === "sprint_started" && e.ts >= dayStart && e.ts < dayEnd) count++;
+  // --- 7-day active series (local days, DST-safe via the Date constructor) ---
+  const now = new Date(nowS * 1000);
+  const week: WeekDay[] = [];
+  for (let offset = -(WEEK_DAYS - 1); offset <= 0; offset++) {
+    const dayStartS = Math.floor(
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset).getTime() / 1000,
+    );
+    const dayEndS = Math.floor(
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset + 1).getTime() / 1000,
+    );
+    let dayActiveS = 0;
+    for (const e of ended) {
+      if (e.ts >= dayStartS && e.ts < dayEndS) dayActiveS += e.active_s;
     }
-    week.push({ date: dateLabel(dayStart), sprints: count });
+    week.push({ date: localDateLabel(dayStartS), activeS: dayActiveS, activeMinutes: dayActiveS / 60 });
   }
 
   return {
-    today: { date: dateLabel(todayStartS), sprints, breaksTaken, breaksSkipped, overRunS, timeline },
-    streak: { current },
+    today: {
+      date: localDateLabel(todayStartS),
+      activeS,
+      sprints,
+      longestStretchS,
+      breaks,
+      totalBreakS,
+      avgBreakS,
+      nudges,
+      nudgeAdherence,
+    },
     week,
   };
 }
