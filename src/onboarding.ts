@@ -1,6 +1,6 @@
-// First-run onboarding window script — walks the user through the agentic cadence
-// in a few light steps, lets them confirm/adjust the sprint & break durations,
-// then on "Get started" persists the durations + `onboarded: true` via
+// First-run onboarding window script — walks the user through the presence
+// cadence in a few light steps, lets them confirm/adjust the sprint length & idle
+// reset, then on "Get started" persists the durations + `onboarded: true` via
 // saveConfig(), signals main to reload config (SETTINGS_SAVED), and closes to the
 // tray.
 //
@@ -20,7 +20,7 @@ import {
   sanitizeNumericField,
   SETTINGS_SAVED,
   SPRINT_BOUNDS,
-  BREAK_BOUNDS,
+  IDLE_RESET_BOUNDS,
 } from "./core/settingsForm";
 import {
   makeSteps,
@@ -52,7 +52,7 @@ if (typeof matchMedia === "function") {
 const stepEls = Array.from(document.querySelectorAll<HTMLElement>(".step"));
 const dotEls = Array.from(document.querySelectorAll<HTMLElement>(".dot"));
 const sprintEl = $<HTMLInputElement>("sprint");
-const breakEl = $<HTMLInputElement>("break");
+const idleResetEl = $<HTMLInputElement>("idle-reset");
 const backEl = $<HTMLButtonElement>("back");
 const nextEl = $<HTMLButtonElement>("next");
 const msgEl = $("msg");
@@ -60,11 +60,9 @@ const msgEl = $("msg");
 // Cursor over the steps rendered in the HTML (kept in sync with the DOM count).
 let steps: StepState = makeSteps(stepEls.length);
 
-// Durations to persist; seeded from stored config on load. Not exposed until the
-// final step, but preserved regardless of whether the user edits them.
-let earlyGraceS = DEFAULT_CONFIG.early_grace_s;
-let graceS = DEFAULT_CONFIG.grace_s;
-let mode = DEFAULT_CONFIG.mode;
+// Config not exposed in onboarding; seeded from stored config on load and
+// preserved verbatim through "Get started".
+let renudgeEveryS = DEFAULT_CONFIG.renudge_every_s;
 
 // Round to at most one decimal place for a clean minutes display (e.g. 0.5).
 const toMinField = (seconds: number): string =>
@@ -72,7 +70,7 @@ const toMinField = (seconds: number): string =>
 
 // The duration fields are plain text (no spinner arrows); keep them numeric as
 // the user types. Bounds clamping still happens on "Get started".
-for (const el of [sprintEl, breakEl]) {
+for (const el of [sprintEl, idleResetEl]) {
   el.addEventListener("input", () => {
     const clean = sanitizeNumericField(el.value);
     if (clean !== el.value) el.value = clean;
@@ -118,11 +116,9 @@ async function load(): Promise<void> {
     cfg = { ...DEFAULT_CONFIG };
   }
   sprintEl.value = toMinField(cfg.sprint_s);
-  breakEl.value = toMinField(cfg.break_s);
-  // Preserve the fields onboarding does not expose.
-  graceS = cfg.grace_s;
-  earlyGraceS = cfg.early_grace_s;
-  mode = cfg.mode;
+  idleResetEl.value = toMinField(cfg.idle_reset_s);
+  // Preserve the field onboarding does not expose.
+  renudgeEveryS = cfg.renudge_every_s;
   render();
 }
 
@@ -132,10 +128,8 @@ async function finish(): Promise<void> {
   msgEl.textContent = "";
   const next: TomatoConfig = {
     sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
-    break_s: minutesToClampedSeconds(parseFloat(breakEl.value), BREAK_BOUNDS),
-    grace_s: graceS, // preserved; not exposed here
-    early_grace_s: earlyGraceS, // preserved; not exposed here
-    mode, // preserved; not exposed here
+    idle_reset_s: minutesToClampedSeconds(parseFloat(idleResetEl.value), IDLE_RESET_BOUNDS),
+    renudge_every_s: renudgeEveryS, // preserved; not exposed here
     onboarded: true,
   };
 
