@@ -23,7 +23,7 @@
         <div class="row">
           <div class="row-text">
             <div class="row-title">Sprint length</div>
-            <div class="row-sub">60 s – 60 min</div>
+            <div class="row-sub">1–60 min</div>
           </div>
           <div class="field">
             <input
@@ -38,62 +38,41 @@
           </div>
         </div>
 
-        <!-- Break length -->
+        <!-- Reset after idle -->
         <div class="row">
           <div class="row-text">
-            <div class="row-title">Break length</div>
-            <div class="row-sub">30 s – 30 min</div>
+            <div class="row-title">Reset after idle</div>
+            <div class="row-sub">step away this long to reset · 1–30 min</div>
           </div>
           <div class="field">
             <input
-              id="break"
+              id="idle"
               class="num"
               type="text"
               inputmode="decimal"
               autocomplete="off"
-              aria-label="Break length in minutes"
+              aria-label="Reset after idle, in minutes"
             />
             <span class="unit">min</span>
           </div>
         </div>
 
-        <!-- Grace window -->
+        <!-- Re-nudge every -->
         <div class="row">
           <div class="row-text">
-            <div class="row-title">Grace window</div>
-            <div class="row-sub">wrap-up after boundary · 0 – 10 min</div>
+            <div class="row-title">Re-nudge every</div>
+            <div class="row-sub">while you keep working · 1–60 min</div>
           </div>
           <div class="field">
             <input
-              id="grace"
+              id="renudge"
               class="num"
               type="text"
               inputmode="decimal"
               autocomplete="off"
-              aria-label="Grace window in minutes"
+              aria-label="Re-nudge every, in minutes"
             />
             <span class="unit">min</span>
-          </div>
-        </div>
-
-        <!-- Enforcement -->
-        <div class="row">
-          <div class="row-text">
-            <div class="row-title">Enforcement</div>
-            <div class="row-sub">how firmly the break is pushed</div>
-          </div>
-          <div
-            class="segmented"
-            id="mode"
-            role="radiogroup"
-            aria-label="Enforcement mode"
-          >
-            <button type="button" class="seg" data-mode="enforced" role="radio" aria-checked="true">
-              Enforced
-            </button>
-            <button type="button" class="seg" data-mode="soft" role="radio" aria-checked="false">
-              Soft
-            </button>
           </div>
         </div>
 

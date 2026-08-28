@@ -1,26 +1,26 @@
 // Settings window script — loads the current config, lets the user edit the
-// durations (shown in MINUTES), enforcement mode, and autostart-on-login, then
-// on Save persists via saveConfig() and signals main to reload (SETTINGS_SAVED).
+// three v2 durations (shown in MINUTES) and autostart-on-login, then on Save
+// persists via saveConfig() and signals main to reload (SETTINGS_SAVED).
 //
 // IMPURE / webview-only: uses Tauri's fs (via native/config), the autostart
 // plugin, the event bus, the window API, and the DOM. Not unit-tested; the pure
 // pieces it leans on (minutesToClampedSeconds, secondsToMinutes, the bounds,
-// resolveTheme) ARE unit-tested in core.
+// sanitizeNumericField, resolveTheme) ARE unit-tested in core.
 
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 
 import { loadConfig, saveConfig, DEFAULT_CONFIG } from "./native/config";
-import type { TomatoConfig, EnforcementMode } from "./native/config";
+import type { TomatoConfig } from "./native/config";
 import {
   minutesToClampedSeconds,
   secondsToMinutes,
   sanitizeNumericField,
   SETTINGS_SAVED,
   SPRINT_BOUNDS,
-  BREAK_BOUNDS,
-  GRACE_BOUNDS,
+  IDLE_RESET_BOUNDS,
+  RENUDGE_BOUNDS,
 } from "./core/settingsForm";
 import { applyTheme, resolveTheme } from "./core/theme";
 
@@ -42,19 +42,15 @@ if (typeof matchMedia === "function") {
 
 // --- element handles -------------------------------------------------------
 const sprintEl = $<HTMLInputElement>("sprint");
-const breakEl = $<HTMLInputElement>("break");
-const graceEl = $<HTMLInputElement>("grace");
-const modeGroup = $("mode");
+const idleEl = $<HTMLInputElement>("idle");
+const renudgeEl = $<HTMLInputElement>("renudge");
 const autostartEl = $<HTMLButtonElement>("autostart");
 const saveEl = $<HTMLButtonElement>("save");
 const cancelEl = $<HTMLButtonElement>("cancel");
 const msgEl = $("msg");
 
 // Local UI state that is not a plain form value.
-let mode: EnforcementMode = DEFAULT_CONFIG.mode;
 let autostartOn = false;
-// early_grace_s is not exposed as a control; preserve whatever is stored.
-let earlyGraceS = DEFAULT_CONFIG.early_grace_s;
 // onboarded is set by first-run onboarding; preserve whatever is stored.
 let onboarded = DEFAULT_CONFIG.onboarded;
 
@@ -64,25 +60,12 @@ const toMinField = (seconds: number): string =>
 
 // The duration fields are plain text (no spinner arrows); keep them numeric as
 // the user types. Bounds clamping still happens on Save.
-for (const el of [sprintEl, breakEl, graceEl]) {
+for (const el of [sprintEl, idleEl, renudgeEl]) {
   el.addEventListener("input", () => {
     const clean = sanitizeNumericField(el.value);
     if (clean !== el.value) el.value = clean;
   });
 }
-
-// --- enforcement segmented toggle ------------------------------------------
-function renderMode(): void {
-  for (const btn of modeGroup.querySelectorAll<HTMLButtonElement>(".seg")) {
-    btn.setAttribute("aria-checked", String(btn.dataset.mode === mode));
-  }
-}
-modeGroup.addEventListener("click", (e) => {
-  const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".seg");
-  if (!btn || !btn.dataset.mode) return;
-  mode = btn.dataset.mode as EnforcementMode;
-  renderMode();
-});
 
 // --- autostart toggle ------------------------------------------------------
 function renderAutostart(): void {
@@ -104,12 +87,9 @@ async function load(): Promise<void> {
     cfg = { ...DEFAULT_CONFIG };
   }
   sprintEl.value = toMinField(cfg.sprint_s);
-  breakEl.value = toMinField(cfg.break_s);
-  graceEl.value = toMinField(cfg.grace_s);
-  mode = cfg.mode;
-  earlyGraceS = cfg.early_grace_s;
+  idleEl.value = toMinField(cfg.idle_reset_s);
+  renudgeEl.value = toMinField(cfg.renudge_every_s);
   onboarded = cfg.onboarded;
-  renderMode();
 
   // Reflect the real login-item state so the toggle matches reality on reopen.
   try {
@@ -125,13 +105,11 @@ async function load(): Promise<void> {
 async function save(): Promise<void> {
   saveEl.disabled = true;
   msgEl.textContent = "";
-  // Clamp minutes → persist-ready seconds within the Spec 1 bounds.
+  // Clamp minutes → persist-ready seconds within the v2 Presence bounds.
   const next: TomatoConfig = {
     sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
-    break_s: minutesToClampedSeconds(parseFloat(breakEl.value), BREAK_BOUNDS),
-    grace_s: minutesToClampedSeconds(parseFloat(graceEl.value), GRACE_BOUNDS),
-    early_grace_s: earlyGraceS, // preserved; not exposed as a control
-    mode,
+    idle_reset_s: minutesToClampedSeconds(parseFloat(idleEl.value), IDLE_RESET_BOUNDS),
+    renudge_every_s: minutesToClampedSeconds(parseFloat(renudgeEl.value), RENUDGE_BOUNDS),
     onboarded, // preserved; set by first-run onboarding
   };
 

@@ -1,7 +1,8 @@
 /* Settings window — theme-aware via tokens.css (light :root / dark
-   [data-theme]). Mirrors the "05 · Settings" screen in the design source:
-   a single card with labelled rows, a segmented enforcement toggle, an
-   autostart switch, and a Cancel / Save footer. */
+   [data-theme]). A single card with three duration rows (Sprint length,
+   Reset after idle, Re-nudge every), an autostart switch, and a Cancel /
+   Save footer. The card is sized to its content and centered by the flex
+   body below, so there is no scrollbar and the gutters stay even. */
 
 *,
 *::before,
@@ -102,31 +103,6 @@ body {
 .field .unit {
   font-size: 12px;
   color: var(--text-muted);
-}
-
-/* --- segmented enforcement toggle ------------------------------------------ */
-.segmented {
-  display: flex;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 3px;
-}
-.seg {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: var(--weight-medium);
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
-  cursor: pointer;
-}
-.seg[aria-checked="true"] {
-  font-weight: var(--weight-semibold);
-  color: #fff;
-  background: var(--tomato);
 }
 
 /* --- autostart switch ------------------------------------------------------ */
