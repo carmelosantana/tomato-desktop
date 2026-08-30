@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tomato — step away</title>
+    <link rel="stylesheet" href="styles/fonts.css" />
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <style>
+      /* Transparent window ground so only the dim + card paint. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        color: var(--text);
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+        user-select: none;
+      }
+      /* Full-screen dim backdrop; clicking it (not the card) dismisses. */
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 15, 10, 0.42);
+        animation: fade-in var(--duration-toast-in, 160ms) var(--ease-out, ease);
+      }
+      .card {
+        width: 380px;
+        max-width: calc(100vw - 48px);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-top: 4px solid var(--overrun);
+        border-radius: var(--radius-md, 12px);
+        box-shadow: var(--shadow-card, 0 12px 30px rgba(40, 30, 20, 0.25));
+        padding: 26px 26px 22px;
+        text-align: center;
+        animation: card-in var(--duration-toast-in, 160ms) var(--ease-out, ease);
+      }
+      .mark {
+        font-size: 40px;
+        line-height: 1;
+        margin-bottom: 12px;
+      }
+      .title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .line {
+        font-size: 13.5px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .dismiss {
+        margin-top: 20px;
+        font-family: var(--font-body);
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--overrun);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 22px;
+        cursor: pointer;
+      }
+      .dismiss:hover {
+        filter: brightness(1.05);
+      }
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes card-in {
+        from {
+          opacity: 0;
+          transform: translateY(10px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop" id="backdrop">
+      <div class="card" id="card">
+        <div class="mark">🍅</div>
+        <div class="title">Time to step away</div>
+        <div class="line" id="nudge-line">Take a short break.</div>
+        <button class="dismiss" id="dismiss" type="button">Dismiss</button>
+      </div>
+    </div>
+    <script type="module" src="nudge-overlay.ts"></script>
+  </body>
+</html>

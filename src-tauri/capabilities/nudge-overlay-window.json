@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "nudge-overlay-window",
+  "description": "Capability for the hard-nudge overlay window: it reads a query param and closes itself. No fs, no events out.",
+  "windows": ["nudge-overlay"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default",
+    "core:window:allow-close"
+  ]
+}

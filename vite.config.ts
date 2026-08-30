@@ -24,6 +24,7 @@ export default defineConfig(async () => ({
         stats: resolve(root, "src/stats.html"),
         settings: resolve(root, "src/settings.html"),
         onboarding: resolve(root, "src/onboarding.html"),
+        "nudge-overlay": resolve(root, "src/nudge-overlay.html"),
       },
     },
   },
