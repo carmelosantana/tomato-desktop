@@ -78,6 +78,17 @@
       .dismiss:hover {
         filter: brightness(1.05);
       }
+      /* Hidden until the rest period unlocks click-anywhere-to-dismiss. */
+      .hint {
+        margin-top: 12px;
+        font-size: 11.5px;
+        color: var(--muted);
+        opacity: 0;
+        transition: opacity 400ms var(--ease-out, ease);
+      }
+      .hint.shown {
+        opacity: 0.75;
+      }
       @keyframes fade-in {
         from {
           opacity: 0;
@@ -105,6 +116,7 @@
         <div class="title">Time to step away</div>
         <div class="line" id="nudge-line">Take a short break.</div>
         <button class="dismiss" id="dismiss" type="button">Dismiss</button>
+        <div class="hint" id="hint">or click anywhere to dismiss</div>
       </div>
     </div>
     <script type="module" src="nudge-overlay.ts"></script>

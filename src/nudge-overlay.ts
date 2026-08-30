@@ -5,9 +5,14 @@
 // soft/hard decision it serves IS unit-tested in core/nudge.ts (escalateNudge).
 //
 // It reads how long you've been focused from its own ?focused=<seconds> query
-// param and offers a single action: Dismiss (button, Esc, or clicking the dim).
+// param. Dismiss via the button or Esc works immediately; clicking anywhere else
+// (the dim) is LOCKED for a short rest period so the overlay can't be reflexively
+// swiped away the instant it appears, then unlocks (with a hint).
 // Dismiss closes the window; main.ts reopens it on the next re-nudge.
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
+/** Rest period (ms) before click-anywhere-to-dismiss unlocks. */
+const REST_MS = 10000;
 
 const focusedS = Number(new URLSearchParams(location.search).get("focused")) || 0;
 const mins = Math.max(1, Math.round(focusedS / 60));
@@ -22,11 +27,14 @@ function dismiss(): void {
   void getCurrentWindow().close();
 }
 
+// The button and Esc always dismiss.
 document.getElementById("dismiss")?.addEventListener("click", dismiss);
-// Clicking the dim backdrop (but not the card) dismisses.
-document.getElementById("backdrop")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) dismiss();
-});
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") dismiss();
 });
+
+// After the rest period, unlock click-anywhere-to-dismiss and reveal the hint.
+window.setTimeout(() => {
+  document.getElementById("hint")?.classList.add("shown");
+  document.addEventListener("click", dismiss);
+}, REST_MS);
