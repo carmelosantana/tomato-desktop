@@ -23,8 +23,14 @@ if (line) {
   } — take a short break.`;
 }
 
+// One-shot: after the lock lifts, a single click reaches both the element's own
+// handler and the bubbled document handler — guard so we only close once (a
+// second close() on a closing window can reject).
+let dismissed = false;
 function dismiss(): void {
-  void getCurrentWindow().close();
+  if (dismissed) return;
+  dismissed = true;
+  void getCurrentWindow().close().catch(() => {});
 }
 
 // The button and Esc always dismiss.
