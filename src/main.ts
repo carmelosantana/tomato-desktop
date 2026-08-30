@@ -316,7 +316,10 @@ async function main(): Promise<void> {
       focus: true,
     });
     nudgeOverlayWindow = win;
-    win.once("tauri://error", (e) => console.error("nudge overlay failed", e));
+    win.once("tauri://error", (e) => {
+      console.error("nudge overlay failed", e);
+      nudgeOverlayWindow = null;
+    });
     win.once("tauri://destroyed", () => {
       nudgeOverlayWindow = null;
     });

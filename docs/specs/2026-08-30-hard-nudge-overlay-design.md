@@ -99,9 +99,11 @@ else:
 
 ## Lifecycle
 
-- **Open:** on a hard nudge, open the overlay; if it's already open, just refresh
-  its "focused for N" text (mirror of the Stats/Settings single-instance pattern
-  in `main.ts`).
+- **Open:** on a hard nudge, open the overlay; if it's already open, re-show and
+  focus it (it stays on the copy from the re-nudge that first opened it — the
+  query-param design has no live-refresh channel, and the minute count is
+  approximate by intent). Mirror of the Stats/Settings single-instance pattern in
+  `main.ts`.
 - **Auto-close on step-away:** when the machine leaves `active` (sprint ends /
   goes idle past reset, or is paused) the overlay closes — going idle *is* the
   break, so a stale "step away" card must not linger. `apply()` already runs every
