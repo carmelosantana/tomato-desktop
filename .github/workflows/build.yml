@@ -76,6 +76,9 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          # Scope by target triple so the (future) two macOS legs — arm64 and
+          # intel, both runner.os == macOS — don't share/pollute one cache key.
+          key: ${{ matrix.rust_target }}
 
       - name: Cache Tauri bundler helpers (Linux)
         if: runner.os == 'Linux'
@@ -99,6 +102,7 @@ jobs:
         run: pnpm tauri build --target ${{ matrix.rust_target }} --bundles ${{ matrix.bundles }}
 
       - name: Package .app.tar.gz (macOS)
+        # Requires `app` in this leg's matrix.bundles (produces bundle/macos/Tomato.app).
         if: runner.os == 'macOS'
         run: |
           VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
