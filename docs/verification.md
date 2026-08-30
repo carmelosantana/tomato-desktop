@@ -101,3 +101,37 @@ Tip: temporarily shorten sprint length / idle-reset / re-nudge in Settings (or
 - `cargo check`/`build` requires `libxss-dev` + `libx11-dev` (see Build
   prerequisites); macOS on-device verification is deferred.
 - The ~2-week concept test-drive is the real evaluation this instrument enables.
+
+## Hard-nudge overlay — manual walkthrough (2026-08-30)
+
+GNOME/X11 (mutter), `tauri dev`, fast config (`sprint_s=60`, `renudge_every_s=60`).
+Feature commits `f08c8a7..3a7b383`. Automated gate at HEAD: `npx tsc --noEmit` exit 0,
+`pnpm test` 113/113, `cargo check` exit 0.
+
+- [x] **Soft nudge (index 0):** boundary at 60s emits a `nudge index 0` event and a
+  quiet desktop notification (event log confirmed; notification is the existing,
+  separately-proven path).
+- [x] **Hard overlay (index ≥ 1):** each re-nudge opens a full-screen overlay —
+  centered card over a **translucent** dim (not solid black). *User-confirmed.*
+- [x] **Full-screen coverage:** overlay sized to `primaryMonitor()` at origin covers
+  the whole screen (the earlier `fullscreen:true` fell back to an 800×600 corner box
+  on mutter — fixed in `3a7b383`). *User-confirmed.*
+- [x] **Dismiss — button:** the Dismiss button closes the overlay. *User-confirmed.*
+- [x] **Dismiss lock (10s rest period):** button + Esc dismiss immediately; clicking
+  the dim is locked for 10s, then unlocks with a fade-in hint. *Implemented per user
+  request (`3a7b383`); user reviewing UX — reported "running great".*
+- [x] **Auto-close / reset:** with `idle_reset=60`, stepping away ended the sprint —
+  `sprint_ended … ended_by:"idle_reset"` in the event log — the transition on which
+  `apply()` closes the overlay. *Event-log corroborated.*
+- [ ] **DND suppression (live):** not run live. Covered by code: the single
+  `decideNudge(dnd) !== "notify"` gate precedes BOTH surfaces, and DND suppression of
+  the soft path was proven earlier. Low-risk; a live spot-check remains optional.
+
+### Notes
+- Under Vite's polling watcher (`CHOKIDAR_USEPOLLING`, used to dodge an inotify
+  `ENOSPC` on this box) the 1 Hz tick stalled once and the machine emitted catch-up
+  nudges (`index 4/5/6` timestamped past `sprint_ended`). Pre-existing
+  `PresenceMachine` catch-up behavior; the shell coalesces a batch to one surface, so
+  it does not multiply overlays. Not introduced by this feature.
+- GNOME top-bar strip may remain undimmed (a normal window can't cover the panel
+  layer) — accepted.
