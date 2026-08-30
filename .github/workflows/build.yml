@@ -15,26 +15,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Pick the build matrix for this event. Linux always builds; the macOS leg
+  # (billed 10x) builds only on v* tags and manual workflow_dispatch — never on
+  # routine pull requests or main pushes. Emitted as JSON and consumed below via
+  # fromJSON, because a static matrix cannot drop a leg per-event.
+  setup:
+    name: Select build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.pick.outputs.matrix }}
+    steps:
+      - name: Pick legs for this event
+        id: pick
+        run: |
+          LINUX='{"name":"linux","runner":"ubuntu-latest","rust_target":"x86_64-unknown-linux-gnu","bundles":"deb appimage"}'
+          ARM='{"name":"macos-arm64","runner":"macos-14","rust_target":"aarch64-apple-darwin","bundles":"app dmg"}'
+          # Staged — enable intel64 by defining INTEL and folding it into MAC (macOS runners bill 10x):
+          # INTEL='{"name":"macos-intel","runner":"macos-13","rust_target":"x86_64-apple-darwin","bundles":"app dmg"}'
+          MAC="$ARM"   # once intel is enabled: MAC="$ARM,$INTEL"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            echo "matrix={\"include\":[$LINUX,$MAC]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix={\"include\":[$LINUX]}" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: Build (${{ matrix.name }})
+    needs: setup
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: linux
-            runner: ubuntu-latest
-            rust_target: x86_64-unknown-linux-gnu
-            bundles: deb appimage
-          - name: macos-arm64
-            runner: macos-14
-            rust_target: aarch64-apple-darwin
-            bundles: app dmg
-          # Staged — enable intel64 by uncommenting this leg (macOS runners bill 10x):
-          # - name: macos-intel
-          #   runner: macos-13
-          #   rust_target: x86_64-apple-darwin
-          #   bundles: app dmg
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
       - name: Checkout
