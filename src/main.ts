@@ -20,7 +20,7 @@ import type { PresenceConfig, PresenceEvent, PresenceState } from "./core/presen
 import { ringVisual } from "./core/ring";
 import { toDomainEvents } from "./core/events";
 import type { MapContext } from "./core/events";
-import { decideNudge } from "./core/nudge";
+import { decideNudge, escalateNudge } from "./core/nudge";
 import { loadConfig } from "./native/config";
 import type { TomatoConfig } from "./native/config";
 import { SETTINGS_SAVED } from "./core/settingsForm";
@@ -46,6 +46,9 @@ const SETTINGS_LABEL = "settings";
 
 /** Onboarding window label — must match capabilities/onboarding-window.json. */
 const ONBOARDING_LABEL = "onboarding";
+
+/** Hard-nudge overlay window label — must match capabilities/nudge-overlay-window.json. */
+const NUDGE_OVERLAY_LABEL = "nudge-overlay";
 
 /** Onboarding window logical size (px), per the design's first-run screen. */
 const ONBOARDING_W = 500;
@@ -125,18 +128,28 @@ async function main(): Promise<void> {
     }
   }
 
-  // React to raw presence events. In v2 the only side effect is the nudge: a
-  // quiet, DND-aware OS notification. No windows, never blocking.
+  // React to raw presence events. The boundary nudge (index 0) is a quiet,
+  // DND-aware desktop notification (soft). Every re-nudge (index >= 1) escalates
+  // to the on-screen overlay (hard) — the soft one is easy to miss.
   async function react(raw: PresenceEvent[]): Promise<void> {
     // Coalesce: a single batch may carry catch-up nudges (index 0,1,2…). Fire at
-    // most ONE notification for the whole batch, and check DND only once, so a
-    // burst can never become a notification storm.
-    if (!raw.some((e) => e.type === "nudge")) return;
-    if (decideNudge(await dndDetector.current()) === "notify") {
+    // most ONE surface for the whole batch and check DND only once, so a burst
+    // can never become a storm. The batch's HIGHEST index picks the surface.
+    const nudges = raw.filter(
+      (e): e is Extract<PresenceEvent, { type: "nudge" }> => e.type === "nudge",
+    );
+    if (nudges.length === 0) return;
+    // DND gates BOTH surfaces: a center overlay during Focus/DND is the rudest
+    // possible violation, so it's suppressed exactly like the soft notification.
+    if (decideNudge(await dndDetector.current()) !== "notify") return;
+    const top = nudges.reduce((a, b) => (b.index > a.index ? b : a));
+    if (escalateNudge(top.index) === "soft") {
       await notify(
         "Tomato",
         "You've been focused a while — a good moment to step away.",
       );
+    } else {
+      await openNudgeOverlay(top.activeMs);
     }
   }
 
@@ -198,12 +211,16 @@ async function main(): Promise<void> {
   }
 
   // Single pipeline for every batch of raw events: persist → react → redraw →
-  // reflect state in the tray menu.
+  // reflect state in the tray menu → close the overlay if we've left a sprint.
   async function apply(raw: PresenceEvent[]): Promise<void> {
     await persist(raw);
     await react(raw);
     await refreshIcon();
     await syncMenu();
+    // The overlay is a live "step away" prompt: once the sprint is no longer
+    // active (you stepped away, or paused) it must not linger. Going idle IS the
+    // break.
+    if (machine.currentState() !== "active") await closeNudgeOverlay();
   }
 
   /**
@@ -266,6 +283,51 @@ async function main(): Promise<void> {
     win.once("tauri://destroyed", () => {
       statsWindow = null;
     });
+  }
+
+  // --- Hard-nudge overlay -----------------------------------------------------
+
+  // The hard-nudge overlay (null when closed). Opened on a re-nudge (index >= 1),
+  // auto-closed when the sprint leaves `active` (see apply), and reopened on the
+  // next re-nudge if still active.
+  let nudgeOverlayWindow: WebviewWindow | null = null;
+
+  /**
+   * Open the hard-nudge overlay (or focus it if already open). Full-screen,
+   * transparent, always-on-top, decorationless: a dimmed backdrop with a centered
+   * card. It takes focus so Esc/click can dismiss it. `activeMs` fills the
+   * "focused for N" copy via a query param.
+   */
+  async function openNudgeOverlay(activeMs: number): Promise<void> {
+    if (nudgeOverlayWindow) {
+      await nudgeOverlayWindow.show().catch(() => {});
+      await nudgeOverlayWindow.setFocus().catch(() => {});
+      return;
+    }
+    const focusedS = Math.round(activeMs / 1000);
+    const win = new WebviewWindow(NUDGE_OVERLAY_LABEL, {
+      url: `src/nudge-overlay.html?focused=${focusedS}`,
+      fullscreen: true,
+      transparent: true,
+      alwaysOnTop: true,
+      decorations: false,
+      skipTaskbar: true,
+      resizable: false,
+      focus: true,
+    });
+    nudgeOverlayWindow = win;
+    win.once("tauri://error", (e) => console.error("nudge overlay failed", e));
+    win.once("tauri://destroyed", () => {
+      nudgeOverlayWindow = null;
+    });
+  }
+
+  /** Close the overlay if open (idempotent). */
+  async function closeNudgeOverlay(): Promise<void> {
+    const win = nudgeOverlayWindow;
+    if (!win) return;
+    nudgeOverlayWindow = null;
+    await win.close().catch(() => {});
   }
 
   // --- Settings window -------------------------------------------------------
