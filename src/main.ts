@@ -13,6 +13,7 @@ import { Menu, MenuItem, PredefinedMenuItem } from "@tauri-apps/api/menu";
 import { invoke } from "@tauri-apps/api/core";
 import { Image } from "@tauri-apps/api/image";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { primaryMonitor } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 
 import { PresenceMachine } from "./core/presence";
@@ -305,9 +306,21 @@ async function main(): Promise<void> {
       return;
     }
     const focusedS = Math.round(activeMs / 1000);
+    // The `fullscreen` flag is unreliable for a transparent, decorationless
+    // window on GNOME/mutter (it silently falls back to the default 800×600 in a
+    // corner). Size the window to the primary monitor at the origin instead so the
+    // dim covers the whole screen deterministically. Monitor size is PHYSICAL px;
+    // WebviewWindow width/height are LOGICAL, so divide by the scale factor.
+    const mon = await primaryMonitor().catch(() => null);
+    const scale = mon?.scaleFactor ?? 1;
+    const width = mon ? Math.ceil(mon.size.width / scale) : 1920;
+    const height = mon ? Math.ceil(mon.size.height / scale) : 1080;
     const win = new WebviewWindow(NUDGE_OVERLAY_LABEL, {
       url: `src/nudge-overlay.html?focused=${focusedS}`,
-      fullscreen: true,
+      x: 0,
+      y: 0,
+      width,
+      height,
       transparent: true,
       alwaysOnTop: true,
       decorations: false,

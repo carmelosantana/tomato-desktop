@@ -89,10 +89,20 @@ else:
   focused for 4 minutes — take a short break,"** and a single primary **"Dismiss"**
   button. Themed from the existing design tokens (light/dark), background painted
   on creation like the other windows to avoid a white flash.
-- **Dismiss** via the button, **Esc**, or clicking the dim. Dismiss = close the
-  window. It does **not** lock input for any duration and does **not** force a
-  break. It takes focus (so Esc/Enter work and it's truly on top); that momentary
-  interruption is the intended "hard" quality.
+- **Dismiss** via the **button** or **Esc** works immediately. Clicking anywhere
+  else (the dim) is **locked for a short rest period (10 s)**, then unlocks (with a
+  fade-in hint) — so the overlay can't be reflexively swiped away the instant it
+  appears, which would defeat "un-missable"; you must either use the button or
+  actually pause first. Dismiss = close the window. It does **not** lock input for
+  any duration and does **not** force a break. It takes focus (so Esc/Enter work
+  and it's truly on top); that momentary interruption is the intended "hard"
+  quality.
+- **Sizing:** the `fullscreen` window flag is unreliable for a transparent,
+  decorationless window on GNOME/mutter (it silently falls back to a default
+  800×600 window in a corner), so the overlay is sized to the **primary monitor**
+  (`primaryMonitor()`, physical→logical via the scale factor) and positioned at the
+  origin. The GNOME top-bar strip may remain undimmed (a normal window can't cover
+  the panel layer); that is acceptable.
 - Reuses the deleted grace-toast's transparent-window/card patterns as prior art
   (see history `4ae9128^:src/grace-toast.{html,ts}`), rebuilt for a centered
   dimmed layout with v2 (windowless) copy.
