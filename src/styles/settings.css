@@ -105,6 +105,51 @@ body {
   color: var(--text-muted);
 }
 
+/* --- nudge style segmented control ----------------------------------------- */
+.row.stack {
+  display: block;
+}
+.seg {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.seg-opt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background var(--duration-state) var(--ease-standard),
+    border-color var(--duration-state) var(--ease-standard);
+}
+.seg-opt:hover {
+  border-color: var(--text-muted);
+}
+.seg-opt[aria-checked="true"] {
+  border-color: var(--tomato);
+  background: var(--surface);
+}
+.seg-label {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+}
+.seg-opt[aria-checked="true"] .seg-label {
+  color: var(--tomato);
+}
+.seg-sub {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
 /* --- autostart switch ------------------------------------------------------ */
 .toggle {
   position: relative;
@@ -175,6 +220,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .seg-opt,
   .toggle,
   .toggle .knob {
     transition: none;

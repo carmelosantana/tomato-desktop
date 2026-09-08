@@ -57,7 +57,7 @@ const ONBOARDING_H = 560;
 
 /** Settings window logical size (px), per the design's Settings screen. */
 const SETTINGS_W = 560;
-const SETTINGS_H = 512;
+const SETTINGS_H = 608;
 
 /** Stats window logical size (px). */
 const STATS_W = 720;

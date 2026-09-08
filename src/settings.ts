@@ -23,6 +23,8 @@ import {
   RENUDGE_BOUNDS,
 } from "./core/settingsForm";
 import { applyTheme, resolveTheme } from "./core/theme";
+import { isNudgeMode } from "./core/nudge";
+import type { NudgeMode } from "./core/nudge";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
   const el = document.getElementById(id);
@@ -45,12 +47,15 @@ const sprintEl = $<HTMLInputElement>("sprint");
 const idleEl = $<HTMLInputElement>("idle");
 const renudgeEl = $<HTMLInputElement>("renudge");
 const autostartEl = $<HTMLButtonElement>("autostart");
+const segEl = $("nudge-mode");
 const saveEl = $<HTMLButtonElement>("save");
 const cancelEl = $<HTMLButtonElement>("cancel");
 const msgEl = $("msg");
 
 // Local UI state that is not a plain form value.
 let autostartOn = false;
+// Selected nudge mode; local until Save, like every other field.
+let nudgeMode: NudgeMode = DEFAULT_CONFIG.nudge_mode;
 // onboarded is set by first-run onboarding; preserve whatever is stored.
 let onboarded = DEFAULT_CONFIG.onboarded;
 
@@ -76,6 +81,19 @@ autostartEl.addEventListener("click", () => {
   renderAutostart();
 });
 
+// --- nudge style segmented control -----------------------------------------
+function renderMode(): void {
+  for (const opt of segEl.querySelectorAll<HTMLButtonElement>(".seg-opt")) {
+    opt.setAttribute("aria-checked", String(opt.dataset.mode === nudgeMode));
+  }
+}
+segEl.addEventListener("click", (e) => {
+  const opt = (e.target as HTMLElement).closest<HTMLButtonElement>(".seg-opt");
+  if (!opt || !isNudgeMode(opt.dataset.mode)) return;
+  nudgeMode = opt.dataset.mode;
+  renderMode();
+});
+
 // --- load ------------------------------------------------------------------
 async function load(): Promise<void> {
   syncTheme();
@@ -90,6 +108,8 @@ async function load(): Promise<void> {
   idleEl.value = toMinField(cfg.idle_reset_s);
   renudgeEl.value = toMinField(cfg.renudge_every_s);
   onboarded = cfg.onboarded;
+  nudgeMode = cfg.nudge_mode;
+  renderMode();
 
   // Reflect the real login-item state so the toggle matches reality on reopen.
   try {
@@ -110,7 +130,7 @@ async function save(): Promise<void> {
     sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
     idle_reset_s: minutesToClampedSeconds(parseFloat(idleEl.value), IDLE_RESET_BOUNDS),
     renudge_every_s: minutesToClampedSeconds(parseFloat(renudgeEl.value), RENUDGE_BOUNDS),
-    nudge_mode: DEFAULT_CONFIG.nudge_mode, // stopgap — Task 5 wires the real control
+    nudge_mode: nudgeMode,
     onboarded, // preserved; set by first-run onboarding
   };
 
