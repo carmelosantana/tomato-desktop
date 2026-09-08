@@ -78,6 +78,13 @@
       .dismiss:hover {
         filter: brightness(1.05);
       }
+      .dismiss:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      .dismiss:disabled:hover {
+        filter: none;
+      }
       /* Hidden until the rest period unlocks click-anywhere-to-dismiss. */
       .hint {
         margin-top: 12px;
@@ -115,7 +122,7 @@
         <div class="mark">🍅</div>
         <div class="title">Time to step away</div>
         <div class="line" id="nudge-line">Take a short break.</div>
-        <button class="dismiss" id="dismiss" type="button">Dismiss</button>
+        <button class="dismiss" id="dismiss" type="button" disabled>Dismiss in 10</button>
         <div class="hint" id="hint">or click anywhere to dismiss</div>
       </div>
     </div>

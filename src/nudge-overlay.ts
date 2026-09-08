@@ -5,11 +5,14 @@
 // soft/hard decision it serves IS unit-tested in core/nudge.ts (escalateNudge).
 //
 // It reads how long you've been focused from its own ?focused=<seconds> query
-// param. Dismiss via the button or Esc works immediately; clicking anywhere else
-// (the dim) is LOCKED for a short rest period so the overlay can't be reflexively
-// swiped away the instant it appears, then unlocks (with a hint).
-// Dismiss closes the window; main.ts reopens it on the next re-nudge.
+// param. EVERY dismissal path — the Dismiss button, Esc, and click-anywhere — is
+// LOCKED for the rest period (REST_MS), with a countdown on the button, so the
+// overlay cannot be cleared until you have actually paused. The lock then lifts
+// and any of the three dismisses. Dismiss closes the window; main.ts reopens it
+// on the next qualifying nudge.
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
+import { dismissLockLabel } from "./core/nudge";
 
 /** Rest period (ms) before click-anywhere-to-dismiss unlocks. */
 const REST_MS = 10000;
@@ -23,24 +26,45 @@ if (line) {
   } — take a short break.`;
 }
 
+// Label the button from the constant so markup and code cannot drift.
+const dismissBtn = document.getElementById("dismiss") as HTMLButtonElement | null;
+if (dismissBtn) dismissBtn.textContent = dismissLockLabel(REST_MS);
+
 // One-shot: after the lock lifts, a single click reaches both the element's own
 // handler and the bubbled document handler — guard so we only close once (a
 // second close() on a closing window can reject).
 let dismissed = false;
+// The lock holds EVERY dismissal path — button, Esc and backdrop click — for the
+// full rest period. A lock that leaves the button live delays nobody.
+let locked = true;
+
 function dismiss(): void {
-  if (dismissed) return;
+  if (locked || dismissed) return;
   dismissed = true;
   void getCurrentWindow().close().catch(() => {});
 }
 
-// The button and Esc always dismiss.
-document.getElementById("dismiss")?.addEventListener("click", dismiss);
+dismissBtn?.addEventListener("click", dismiss);
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") dismiss();
 });
 
-// After the rest period, unlock click-anywhere-to-dismiss and reveal the hint.
+// Tick the button's countdown once a second while the lock holds.
+const lockStartedAt = Date.now();
+const ticker = window.setInterval(() => {
+  const remaining = REST_MS - (Date.now() - lockStartedAt);
+  if (dismissBtn) dismissBtn.textContent = dismissLockLabel(remaining);
+}, 1000);
+
+// Lock lifts: enable the button, allow Esc, reveal the hint, and attach
+// click-anywhere-to-dismiss.
 window.setTimeout(() => {
+  window.clearInterval(ticker);
+  locked = false;
+  if (dismissBtn) {
+    dismissBtn.disabled = false;
+    dismissBtn.textContent = dismissLockLabel(0);
+  }
   document.getElementById("hint")?.classList.add("shown");
   document.addEventListener("click", dismiss);
 }, REST_MS);
