@@ -135,3 +135,37 @@ Feature commits `f08c8a7..3a7b383`. Automated gate at HEAD: `npx tsc --noEmit` e
   it does not multiply overlays. Not introduced by this feature.
 - GNOME top-bar strip may remain undimmed (a normal window can't cover the panel
   layer) — accepted.
+
+## Nudge modes (2026-09-08)
+
+Automated gate — **run and green** on this branch:
+
+- [x] `pnpm test` — 12 files, 120 tests pass (9 new in `core/nudge.test.ts`:
+  `chooseNudgeSurface` × 4, `isNudgeMode` × 2, `dismissLockLabel` × 3).
+- [x] `npx tsc --noEmit` — clean. Caught the two `TomatoConfig` builders that
+  needed the new key (`settings.ts:109`, `onboarding.ts:129`).
+- [x] `cargo check` — clean.
+
+Manual walk-through — **NOT YET RUN.** These need a live session with a short
+sprint + short renudge (Sprint length 1 min, Re-nudge every 1 min) and have not
+been observed by the agent. Do not treat this feature as verified until they are
+checked off.
+
+- [ ] **`soft` mode:** boundary and every re-nudge give a desktop banner; the
+  overlay never opens.
+- [ ] **`hard` mode:** the boundary itself opens the overlay; no banner.
+- [ ] **`escalating` mode:** boundary banner, first re-nudge opens the overlay.
+- [ ] **Dismiss lock (total):** on open the button reads `Dismiss in 10` and
+  counts down once per second; the button, Esc, **and** a backdrop click are all
+  inert until it reads `Dismiss`, after which each closes the overlay. This is
+  the behavior corrected in `d3fbc97` — the previous build's button and Esc
+  fired instantly, so the lock delayed nothing.
+- [ ] **Auto-close:** stepping away (idle past reset) while the overlay is up
+  closes it.
+- [ ] **DND:** with `gsettings set org.gnome.desktop.notifications show-banners false`,
+  no surface fires in any of the three modes.
+- [ ] **Deferred apply:** changing the mode mid-sprint takes effect on the next
+  sprint, not immediately (`applyPendingConfig()` only swaps while away/paused).
+- [ ] **Settings layout:** the four rows plus the autostart toggle fit with no
+  scrollbar and even margins at `SETTINGS_H = 608` (grown from 512 for the new
+  stacked row; the window is sized to its card and not resizable).

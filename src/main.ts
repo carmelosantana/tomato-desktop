@@ -142,9 +142,12 @@ async function main(): Promise<void> {
     if (nudges.length === 0) return;
     // DND gates BOTH surfaces: a center overlay during Focus/DND is the rudest
     // possible violation, so it's suppressed exactly like the soft notification.
+    // Which surface then fires is the user's nudge_mode: "soft" is always a
+    // desktop notification, "hard" is always the overlay, "escalating" sends the
+    // boundary soft and every re-nudge hard.
     if (decideNudge(await dndDetector.current()) !== "notify") return;
     const top = nudges.reduce((a, b) => (b.index > a.index ? b : a));
-    if (chooseNudgeSurface("escalating", top.index) === "soft") {
+    if (chooseNudgeSurface(config.nudge_mode, top.index) === "soft") {
       await notify(
         "Tomato",
         "You've been focused a while — a good moment to step away.",
