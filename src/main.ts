@@ -21,7 +21,7 @@ import type { PresenceConfig, PresenceEvent, PresenceState } from "./core/presen
 import { ringVisual } from "./core/ring";
 import { toDomainEvents } from "./core/events";
 import type { MapContext } from "./core/events";
-import { decideNudge, escalateNudge } from "./core/nudge";
+import { chooseNudgeSurface, decideNudge } from "./core/nudge";
 import { loadConfig } from "./native/config";
 import type { TomatoConfig } from "./native/config";
 import { SETTINGS_SAVED } from "./core/settingsForm";
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
     // possible violation, so it's suppressed exactly like the soft notification.
     if (decideNudge(await dndDetector.current()) !== "notify") return;
     const top = nudges.reduce((a, b) => (b.index > a.index ? b : a));
-    if (escalateNudge(top.index) === "soft") {
+    if (chooseNudgeSurface("escalating", top.index) === "soft") {
       await notify(
         "Tomato",
         "You've been focused a while — a good moment to step away.",
