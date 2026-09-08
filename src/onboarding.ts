@@ -14,6 +14,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { loadConfig, saveConfig, DEFAULT_CONFIG } from "./native/config";
 import type { TomatoConfig } from "./native/config";
+import type { NudgeMode } from "./core/nudge";
 import {
   minutesToClampedSeconds,
   secondsToMinutes,
@@ -63,6 +64,7 @@ let steps: StepState = makeSteps(stepEls.length);
 // Config not exposed in onboarding; seeded from stored config on load and
 // preserved verbatim through "Get started".
 let renudgeEveryS = DEFAULT_CONFIG.renudge_every_s;
+let nudgeMode: NudgeMode = DEFAULT_CONFIG.nudge_mode;
 
 // Round to at most one decimal place for a clean minutes display (e.g. 0.5).
 const toMinField = (seconds: number): string =>
@@ -117,8 +119,9 @@ async function load(): Promise<void> {
   }
   sprintEl.value = toMinField(cfg.sprint_s);
   idleResetEl.value = toMinField(cfg.idle_reset_s);
-  // Preserve the field onboarding does not expose.
+  // Preserve the fields onboarding does not expose.
   renudgeEveryS = cfg.renudge_every_s;
+  nudgeMode = cfg.nudge_mode;
   render();
 }
 
@@ -130,6 +133,7 @@ async function finish(): Promise<void> {
     sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
     idle_reset_s: minutesToClampedSeconds(parseFloat(idleResetEl.value), IDLE_RESET_BOUNDS),
     renudge_every_s: renudgeEveryS, // preserved; not exposed here
+    nudge_mode: nudgeMode, // preserved; not exposed here
     onboarded: true,
   };
 

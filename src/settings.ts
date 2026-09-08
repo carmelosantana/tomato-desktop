@@ -110,6 +110,7 @@ async function save(): Promise<void> {
     sprint_s: minutesToClampedSeconds(parseFloat(sprintEl.value), SPRINT_BOUNDS),
     idle_reset_s: minutesToClampedSeconds(parseFloat(idleEl.value), IDLE_RESET_BOUNDS),
     renudge_every_s: minutesToClampedSeconds(parseFloat(renudgeEl.value), RENUDGE_BOUNDS),
+    nudge_mode: DEFAULT_CONFIG.nudge_mode, // stopgap — Task 5 wires the real control
     onboarded, // preserved; set by first-run onboarding
   };
 

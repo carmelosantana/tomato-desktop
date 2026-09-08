@@ -21,6 +21,8 @@ import {
   RENUDGE_BOUNDS,
 } from "../core/settingsForm";
 import type { DurationBounds } from "../core/settingsForm";
+import { isNudgeMode } from "../core/nudge";
+import type { NudgeMode } from "../core/nudge";
 
 /** Tomato v2 settings. All *_s fields are durations in SECONDS (see units note). */
 export interface TomatoConfig {
@@ -30,15 +32,18 @@ export interface TomatoConfig {
   idle_reset_s: number;
   /** Interval between renudges once a sprint boundary is reached, seconds. */
   renudge_every_s: number;
+  /** Which nudge surface fires at which nudge index. */
+  nudge_mode: NudgeMode;
   /** Whether first-run onboarding has been completed. */
   onboarded: boolean;
 }
 
-/** v2 Presence defaults: 15m sprint / 5m idle-reset / 15m renudge. */
+/** v2 Presence defaults: 15m sprint / 5m idle-reset / 15m renudge, escalating nudges. */
 export const DEFAULT_CONFIG: TomatoConfig = {
   sprint_s: 900,
   idle_reset_s: 300,
   renudge_every_s: 900,
+  nudge_mode: "escalating",
   onboarded: false,
 };
 
@@ -52,13 +57,22 @@ const CONFIG_FILE = "config.json";
  * value falls back to the default rather than being clamped up to the minimum.
  */
 function sanitizeDuration(
-  raw: number | undefined,
+  raw: unknown,
   bounds: DurationBounds,
   def: number,
 ): number {
   return typeof raw === "number" && Number.isFinite(raw)
     ? clamp(raw, bounds.minS, bounds.maxS)
     : def;
+}
+
+/**
+ * Sanitize the stored nudge mode: anything that is not one of the three literals
+ * — absent, misspelled, hand-edited, or a retired key — falls back to the
+ * default rather than flowing through to the shell.
+ */
+function sanitizeMode(raw: unknown): NudgeMode {
+  return isNudgeMode(raw) ? raw : DEFAULT_CONFIG.nudge_mode;
 }
 
 async function configPath(ensureDir: boolean): Promise<string> {
@@ -79,7 +93,7 @@ export async function loadConfig(): Promise<TomatoConfig> {
   const path = await configPath(false);
   if (!(await exists(path))) return { ...DEFAULT_CONFIG };
   try {
-    const raw = JSON.parse(await readTextFile(path)) as Partial<TomatoConfig>;
+    const raw = JSON.parse(await readTextFile(path)) as Partial<Record<keyof TomatoConfig, unknown>>;
     return {
       sprint_s: sanitizeDuration(raw.sprint_s, SPRINT_BOUNDS, DEFAULT_CONFIG.sprint_s),
       idle_reset_s: sanitizeDuration(raw.idle_reset_s, IDLE_RESET_BOUNDS, DEFAULT_CONFIG.idle_reset_s),
@@ -88,7 +102,8 @@ export async function loadConfig(): Promise<TomatoConfig> {
         RENUDGE_BOUNDS,
         DEFAULT_CONFIG.renudge_every_s,
       ),
-      onboarded: raw.onboarded ?? DEFAULT_CONFIG.onboarded,
+      nudge_mode: sanitizeMode(raw.nudge_mode),
+      onboarded: (raw.onboarded as boolean | undefined) ?? DEFAULT_CONFIG.onboarded,
     };
   } catch {
     // Corrupt or unreadable config.json — fall back to defaults, same as absent.
