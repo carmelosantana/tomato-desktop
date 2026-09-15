@@ -169,3 +169,9 @@ checked off.
 - [ ] **Settings layout:** the four rows plus the autostart toggle fit with no
   scrollbar and even margins at `SETTINGS_H = 608` (grown from 512 for the new
   stacked row; the window is sized to its card and not resizable).
+
+### User report (2026-09-15)
+
+Launched the 2026-09-08 AppImage built from `5f76cc8` and reported it "working
+pretty good". That is a general sign-off, not a per-item result, so the boxes
+above stay unchecked until the individual behaviors are confirmed.
