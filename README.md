@@ -18,7 +18,8 @@ Conforms to **Spec 1 — The Agentic 15-Minute Window** (see
 - `docs/design/` — the delivered brand kit (tokens, tray/app icons, UI icons,
   mockups). `docs/design/tomato-tokens.json` (+ `.css`) is the source of truth for
   design tokens.
-- `docs/plans/` — implementation plan(s).
+- Planning docs (specs, plans, verification checklists) are **not** kept in the repo —
+  they live on the Kanboard board for this project. Past versions remain in git history.
 - `src/` — TypeScript frontend (pure core + UI). *(scaffolded during the build)*
 - `src-tauri/` — Rust shell. *(scaffolded during the build)*
 
@@ -31,5 +32,8 @@ Conforms to **Spec 1 — The Agentic 15-Minute Window** (see
 
 ## License
 
-**TBD.** Visibility/licensing (public / private / hybrid, possibly paid) is
-undecided; no open-source license is granted yet. See [`LICENSE`](LICENSE).
+**Freeware.** Free to use for personal or commercial purposes, at no charge,
+under the End User License Agreement in [`LICENSE`](LICENSE). The Software is
+licensed, not sold; no source rights are granted, and modified redistribution
+requires written permission. Bundled design assets under `docs/design/` and
+third-party dependencies carry their own licenses.

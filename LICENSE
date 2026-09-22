@@ -1,10 +1,87 @@
-Tomato (desktop) — All rights reserved (license TBD)
+Tomato (desktop) — Freeware End User License Agreement
 
-Copyright (c) 2026 Carmelo Santana
+Copyright (c) 2026 Carmelo Santana. All rights reserved.
 
-No license is granted at this time. Licensing and visibility (public, private,
-or a hybrid commercial model) are undecided. This placeholder will be replaced
-once that decision is made. Until then, all rights are reserved.
+This End User License Agreement ("Agreement") is a legal agreement between you
+("You") and Carmelo Santana ("Licensor") for the Tomato desktop application,
+including its executable code, bundled assets, and accompanying documentation
+(the "Software"). By installing, copying, or using the Software, You agree to
+be bound by this Agreement. If You do not agree, do not install or use the
+Software.
 
-Note: bundled design assets under docs/design/ and third-party dependencies
-carry their own licenses.
+1. GRANT OF LICENSE
+
+The Software is freeware. Licensor grants You a non-exclusive, worldwide,
+royalty-free, revocable license to install and use an unlimited number of
+copies of the Software for personal or commercial purposes, at no charge.
+
+2. RESTRICTIONS
+
+Except to the extent this Agreement expressly permits, or applicable law
+permits notwithstanding this Agreement, You may not:
+
+  a. sell, rent, lease, sublicense, or charge any fee for the Software;
+  b. distribute or make the Software available to third parties in modified
+     form, or bundled with any other product, without Licensor's prior
+     written permission;
+  c. reverse engineer, decompile, or disassemble the Software;
+  d. remove or alter any copyright, trademark, or other proprietary notice; or
+  e. use Licensor's name, trademarks, or logos to endorse or promote any
+     derivative or related product without prior written permission.
+
+Unmodified, unaltered redistribution of the Software in its original
+distributable form, free of charge and with this Agreement included, is
+permitted.
+
+3. OWNERSHIP
+
+The Software is licensed, not sold. Licensor retains all right, title, and
+interest in and to the Software, including all intellectual property rights.
+This Agreement grants You no rights to the Software's source code.
+
+4. THIRD-PARTY COMPONENTS
+
+The Software incorporates third-party components, and the design assets under
+docs/design/ carry their own licenses. Those terms govern those components and
+assets, and nothing in this Agreement limits any right granted by them.
+
+5. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. YOU ASSUME THE ENTIRE
+RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE.
+
+6. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR
+BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE, INCLUDING ANY LOST
+PROFITS, LOST DATA, OR BUSINESS INTERRUPTION.
+
+Some jurisdictions do not allow the exclusion of implied warranties or the
+limitation of liability for incidental or consequential damages, so the above
+limitations may not apply to You.
+
+7. NO SUPPORT
+
+Licensor is under no obligation to provide support, maintenance, updates, or
+future versions of the Software.
+
+8. PRIVACY
+
+The Software operates offline. It makes no network connections and transmits
+no data. All data it creates — its configuration file and its append-only
+session event log — is written only to Your local machine.
+
+9. TERMINATION
+
+This Agreement is effective until terminated. It terminates automatically,
+without notice, if You breach any of its terms. Upon termination You must stop
+using the Software and destroy all copies in Your possession.
+
+10. GOVERNING LAW
+
+This Agreement is governed by the laws of the State of New York, United
+States, without regard to its conflict-of-law provisions.

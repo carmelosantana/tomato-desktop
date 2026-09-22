@@ -18,11 +18,11 @@ Tauri recipe: this repo builds with an explicit `--target`, so output lands unde
 | 5. Sync (optional) | `$H place <file> "$($H derive-app .)" "$($H derive-version .)" linux x64` for each bundle | prints `~/Builds/tomato/tomato-<ver>-<sha>-linux-x64.<ext>` |
 
 `B=src-tauri/target/x86_64-unknown-linux-gnu/release/bundle`. Filenames are
-`Tomato_<version>_amd64.{deb,AppImage}`; `<version>` comes from `src-tauri/tauri.conf.json`.
+`Tomato_<version>_amd64.{deb,AppImage}`; `<version>` comes from `src-tauri/tauri.conf.json` (0.2.0 here).
 
-`H=~/.claude/plugins/cache/carmelosantana/powerup/0.1.0/skills/build-sync/assets/builds` — the
-build-sync helper. Its skill points at `~/.claude/skills/build-sync/...`, which does not exist here.
-Use the derived tokens as-is: they place local builds in `~/Builds/tomato/` with the commit hash in
+`H` is the build-sync helper, shipped with the powerup plugin (`builds` under its
+`skills/build-sync/assets/`); resolve it from the installed plugin cache. The skill's documented
+path `~/.claude/skills/build-sync/...` does not exist on a plugin-based install. Use the derived tokens as-is: they place local builds in `~/Builds/tomato/` with the commit hash in
 the name. **Never pass `tomato-desktop` as the app** — that folder holds the synced v0.1.0 release
 files, and the keep-2-newest prune would delete them.
 
