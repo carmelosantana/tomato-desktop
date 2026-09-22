@@ -114,6 +114,7 @@ jobs:
         run: |
           pnpm test
           npx tsc --noEmit
+          cargo test --manifest-path src-tauri/Cargo.toml
 
       - name: Build Tauri bundle
         run: pnpm tauri build --target ${{ matrix.rust_target }} --bundles ${{ matrix.bundles }}

@@ -1,5 +1,7 @@
 use std::process::Command;
 
+#[cfg(target_os = "linux")]
+mod autostart_heal;
 mod presence;
 
 /// Report the desktop Do-Not-Disturb state by reading GNOME's notification
@@ -44,6 +46,42 @@ fn idle_seconds() -> Option<f64> {
     presence::idle_seconds()
 }
 
+/// Re-register autostart when its recorded `Exec=` target has gone missing, so a
+/// moved or upgraded binary cannot leave the entry dangling. Best-effort: every
+/// failure is logged and ignored, because autostart is a convenience and must
+/// never stop the app from starting.
+#[cfg(target_os = "linux")]
+fn heal_autostart(app: &tauri::AppHandle) {
+    use tauri_plugin_autostart::ManagerExt;
+
+    let manager = app.autolaunch();
+    if !manager.is_enabled().unwrap_or(false) {
+        return; // user hasn't asked for autostart — nothing to keep honest
+    }
+
+    let Some(base) = std::env::var_os("XDG_CONFIG_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config")))
+    else {
+        return;
+    };
+    let entry = base
+        .join("autostart")
+        .join(format!("{}.desktop", app.package_info().name));
+
+    let Ok(body) = std::fs::read_to_string(&entry) else {
+        return; // is_enabled() said yes but we can't read it — leave it alone
+    };
+    if !autostart_heal::needs_rewrite(&body, |p| p.exists()) {
+        return;
+    }
+
+    eprintln!("tomato: autostart entry points at a missing binary; re-registering");
+    if let Err(e) = manager.disable().and_then(|_| manager.enable()) {
+        eprintln!("tomato: could not repair autostart: {e}");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -55,6 +93,12 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
+        .setup(|app| {
+            // A stale autostart entry fails silently at login; repair it here.
+            #[cfg(target_os = "linux")]
+            heal_autostart(app.handle());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![dnd_state, quit, idle_seconds])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
