@@ -1,2 +1,9 @@
+# Supply-chain hardening (pnpm 11+ reads these here, not from .npmrc).
+# 24h quarantine on newly published versions; strict = refuse instead of auto-exclude.
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+# Block git/tarball transitive deps.
+blockExoticSubdeps: true
+# Only these packages may run install scripts.
 allowBuilds:
   esbuild: true
