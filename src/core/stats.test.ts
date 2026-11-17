@@ -173,3 +173,14 @@ describe("computeStats — empty log", () => {
     expect(week.every((d) => d.activeS === 0 && d.activeMinutes === 0)).toBe(true);
   });
 });
+
+describe("computeStats — a reset after the boundary nudge counts as adherence", () => {
+  it("treats ended_by 'reset' within the window like an idle_reset", () => {
+    const evs: DomainEvent[] = [
+      { event: "sprint_started", ts: at(2026, 7, 23, 9, 0), sprint_id: "R", trigger: "activity" },
+      { event: "nudge", ts: at(2026, 7, 23, 9, 15), sprint_id: "R", active_s: 900, index: 0 },
+      { event: "sprint_ended", ts: at(2026, 7, 23, 9, 16), sprint_id: "R", active_s: 960, over_s: 60, ended_by: "reset" },
+    ];
+    expect(computeStats(evs, nowS).today.nudgeAdherence).toBe(1);
+  });
+});

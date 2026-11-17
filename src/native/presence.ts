@@ -16,3 +16,31 @@ export async function idleSeconds(): Promise<number | null> {
   const v = await invoke<number | null>("idle_seconds");
   return typeof v === "number" ? v : null;
 }
+
+/** A completed idle stretch the native sampler saw between ticks (epoch ms). */
+export interface IdleGap {
+  startAt: number;
+  lenMs: number;
+}
+
+/**
+ * Idle seconds now, plus the longest idle stretch that ended since the last call
+ * (null when none) — so a break that falls between two sparse ticks still ends
+ * the sprint.
+ */
+export async function idleSample(): Promise<{ idleSeconds: number | null; gap: IdleGap | null }> {
+  const v = await invoke<{ idleSeconds: number | null; gap: IdleGap | null }>("idle_sample");
+  return {
+    idleSeconds: typeof v?.idleSeconds === "number" ? v.idleSeconds : null,
+    gap: v?.gap && typeof v.gap.startAt === "number" && typeof v.gap.lenMs === "number" ? v.gap : null,
+  };
+}
+
+/** Whether a Steam game is running (false when the probe fails). */
+export async function gameRunning(): Promise<boolean> {
+  try {
+    return (await invoke<boolean>("game_running")) === true;
+  } catch {
+    return false;
+  }
+}

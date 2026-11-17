@@ -34,8 +34,18 @@ export type PresenceEvent =
       at: number;
       activeMs: number;
       overMs: number;
-      endedBy: "idle_reset" | "paused" | "manual";
+      endedBy: "idle_reset" | "paused" | "manual" | "reset";
     };
+
+/**
+ * An idle stretch that ENDED between two ticks, as recorded by the native
+ * sampler (which polls faster than the tick loop and keeps the longest one).
+ * `startAt` is the wall-clock ms the stretch began (the last input before it).
+ */
+export interface IdleGap {
+  startAt: number;
+  lenMs: number;
+}
 
 export interface PresenceSnapshot {
   state: PresenceState;
@@ -83,7 +93,7 @@ export class PresenceMachine {
    * Advance the machine to `now`. `idleMs` is ms since last OS input, or null when
    * the presence provider is unavailable (manual mode). Returns any events crossed.
    */
-  tick(now: number, idleMs: number | null): PresenceEvent[] {
+  tick(now: number, idleMs: number | null, gap: IdleGap | null = null): PresenceEvent[] {
     if (this.state === "paused") return [];
 
     // Manual mode: no presence signal. Only an active manual sprint does anything,
@@ -97,6 +107,19 @@ export class PresenceMachine {
 
     const events: PresenceEvent[] = [];
     const lastActivityAt = now - idleMs;
+
+    // A qualifying idle stretch that ended since the last tick: the tick that
+    // would have observed it never landed (sparse/stalled ticks), so end the
+    // sprint at the stretch's start now. The current reading then runs the
+    // normal away handling below, so returning input begins a fresh sprint.
+    if (
+      this.state === "active" &&
+      gap !== null &&
+      gap.lenMs >= this.config.idleResetMs &&
+      gap.startAt >= this.sprintStartAt
+    ) {
+      events.push(...this.endSprint(gap.startAt, "idle_reset"));
+    }
 
     if (this.state === "away") {
       if (idleMs <= this.config.activityThresholdMs) {
@@ -119,17 +142,7 @@ export class PresenceMachine {
       if (idleMs >= this.config.idleResetMs) {
         // Idle long enough to end the sprint. Measure the active span to the LAST
         // activity, so trailing idle is excluded from the logged time.
-        const activeMs = Math.max(0, lastActivityAt - this.sprintStartAt);
-        if (this.sprintStartedEmitted) {
-          events.push({
-            type: "sprint-ended",
-            at: lastActivityAt,
-            activeMs,
-            overMs: Math.max(0, activeMs - this.config.sprintMs),
-            endedBy: "idle_reset",
-          });
-        }
-        this.state = "away";
+        events.push(...this.endSprint(lastActivityAt, "idle_reset"));
         return events;
       }
 
@@ -190,6 +203,31 @@ export class PresenceMachine {
         activeMs,
         overMs: Math.max(0, activeMs - this.config.sprintMs),
         endedBy: "manual",
+      },
+    ];
+  }
+
+  /**
+   * active → away on the user's explicit "reset the counter" (overlay or tray).
+   * Ends a logged sprint with endedBy "reset"; the next activity starts afresh.
+   */
+  reset(now: number): PresenceEvent[] {
+    if (this.state !== "active") return [];
+    return this.endSprint(now, "reset");
+  }
+
+  /** End the active sprint at `at` → away; emits only if the sprint was logged. */
+  private endSprint(at: number, endedBy: "idle_reset" | "reset"): PresenceEvent[] {
+    this.state = "away";
+    if (!this.sprintStartedEmitted) return [];
+    const activeMs = Math.max(0, at - this.sprintStartAt);
+    return [
+      {
+        type: "sprint-ended",
+        at,
+        activeMs,
+        overMs: Math.max(0, activeMs - this.config.sprintMs),
+        endedBy,
       },
     ];
   }

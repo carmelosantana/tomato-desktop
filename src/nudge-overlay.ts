@@ -10,9 +10,10 @@
 // overlay cannot be cleared until you have actually paused. The lock then lifts
 // and any of the three dismisses. Dismiss closes the window; main.ts reopens it
 // on the next qualifying nudge.
+import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { dismissLockLabel } from "./core/nudge";
+import { dismissLockLabel, NUDGE_RESET } from "./core/nudge";
 
 /** Rest period (ms) before click-anywhere-to-dismiss unlocks. */
 const REST_MS = 10000;
@@ -45,6 +46,15 @@ function dismiss(): void {
 }
 
 dismissBtn?.addEventListener("click", dismiss);
+
+// "Dismiss & reset timer": tell main to end the sprint (it closes this window
+// as the sprint leaves `active`), and close ourselves too in case it doesn't.
+const resetBtn = document.getElementById("reset") as HTMLButtonElement | null;
+resetBtn?.addEventListener("click", (e) => {
+  e.stopPropagation(); // not also a backdrop click
+  if (locked || dismissed) return;
+  void emit(NUDGE_RESET).finally(dismiss);
+});
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") dismiss();
 });
@@ -65,6 +75,7 @@ window.setTimeout(() => {
     dismissBtn.disabled = false;
     dismissBtn.textContent = dismissLockLabel(0);
   }
+  if (resetBtn) resetBtn.disabled = false;
   document.getElementById("hint")?.classList.add("shown");
   document.addEventListener("click", dismiss);
 }, REST_MS);

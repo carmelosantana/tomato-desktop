@@ -124,7 +124,9 @@ export function computeStats(
     const end = endBySprint.get(n.sprint_id);
     if (!end) continue; // sprint never ended → not in the denominator
     denom++;
-    if (end.ended_by === "idle_reset" && end.ts >= n.ts && end.ts - n.ts <= adherenceWindowS) {
+    // A user-chosen reset after the nudge is a break taken, same as going idle.
+    const tookBreak = end.ended_by === "idle_reset" || end.ended_by === "reset";
+    if (tookBreak && end.ts >= n.ts && end.ts - n.ts <= adherenceWindowS) {
       numer++;
     }
   }

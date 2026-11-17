@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ringProgress, ringVisual, describeRing, RING_GEOMETRY } from "./ring";
+import { ringProgress, ringVisual, describeRing, nextPulse, RING_GEOMETRY } from "./ring";
+
 
 describe("ringProgress", () => {
   it("is 0 at the start", () => {
@@ -105,5 +106,17 @@ describe("describeRing", () => {
     const d = describeRing(16);
     expect(d.diameter).toBeCloseTo(13.44, 5); // 16 * 0.84
     expect(d.strokeWidth).toBeCloseTo(2.016, 5);
+  });
+});
+
+describe("nextPulse — draw attention while the ring is red", () => {
+  it("alternates on each redraw while overrun", () => {
+    expect(nextPulse("overrun", false)).toBe(true);
+    expect(nextPulse("overrun", true)).toBe(false);
+  });
+
+  it("is off in every other role", () => {
+    expect(nextPulse("focus", true)).toBe(false);
+    expect(nextPulse("idle", true)).toBe(false);
   });
 });

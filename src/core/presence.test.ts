@@ -252,3 +252,89 @@ describe("PresenceMachine — setConfig between sprints", () => {
     expect(n0.type === "nudge" && n0.activeMs).toBe(120_000);
   });
 });
+
+describe("PresenceMachine — idle stretch missed between ticks (Linux reset bug)", () => {
+  // Ticks are sparse (the webview loop runs at ~0.5 Hz and can stall), so the tick
+  // that would have seen idle >= idleResetMs may never land. The native sampler
+  // reports the longest idle stretch that ENDED since the last read; the machine
+  // must honor it even though the current idle reading is small again.
+  const started = () => {
+    const p = new PresenceMachine(cfg);
+    p.tick(0, 0);
+    p.tick(1_000_000, 1_000); // well past the floor → sprint-started emitted
+    return p;
+  };
+
+  it("ends the sprint at the stretch's start when it reached idleResetMs", () => {
+    const p = started();
+    // A 300s stretch began at 1_100_000 and ended at 1_400_000; at this tick the
+    // user is back (idle 2s), so the instantaneous reading alone would miss it.
+    const es = p.tick(1_402_000, 2_000, { startAt: 1_100_000, lenMs: 300_000 });
+    const ended = only(es, "sprint-ended");
+    expect(ended).toHaveLength(1);
+    expect(ended[0]).toMatchObject({ at: 1_100_000, activeMs: 1_100_000, endedBy: "idle_reset" });
+    // The returning input begins a fresh sprint immediately.
+    expect(p.currentState()).toBe("active");
+    expect(p.snapshot(1_402_000).activeMs).toBe(2_000);
+  });
+
+  it("ignores a stretch shorter than idleResetMs", () => {
+    const p = started();
+    const es = p.tick(1_402_000, 2_000, { startAt: 1_200_000, lenMs: 299_999 });
+    expect(only(es, "sprint-ended")).toHaveLength(0);
+    expect(p.snapshot(1_402_000).activeMs).toBe(1_402_000);
+  });
+
+  it("ignores a stretch that began before the current sprint", () => {
+    const p = started();
+    const es = p.tick(1_402_000, 2_000, { startAt: -500_000, lenMs: 400_000 });
+    expect(only(es, "sprint-ended")).toHaveLength(0);
+  });
+
+  it("drops an unlogged (sub-floor) sprint silently", () => {
+    const p = new PresenceMachine(cfg);
+    p.tick(0, 0);
+    const es = p.tick(400_000, 1_000, { startAt: 30_000, lenMs: 300_000 });
+    expect(only(es, "sprint-ended")).toHaveLength(0);
+    expect(p.currentState()).toBe("active");
+    expect(p.snapshot(400_000).activeMs).toBe(1_000);
+  });
+});
+
+describe("PresenceMachine — reset (dismiss & reset the counter)", () => {
+  it("ends a logged sprint with endedBy 'reset' and returns to away", () => {
+    const p = new PresenceMachine(cfg);
+    p.tick(0, 0);
+    p.tick(2_000_000, 1_000);
+    const es = p.reset(2_000_000);
+    expect(es).toEqual([
+      { type: "sprint-ended", at: 2_000_000, activeMs: 2_000_000, overMs: 500_000, endedBy: "reset" },
+    ]);
+    expect(p.currentState()).toBe("away");
+    expect(p.snapshot(2_000_000).activeMs).toBe(0);
+  });
+
+  it("next activity starts a fresh sprint from zero", () => {
+    const p = new PresenceMachine(cfg);
+    p.tick(0, 0);
+    p.tick(2_000_000, 1_000);
+    p.reset(2_000_000);
+    p.tick(2_001_000, 0);
+    expect(p.snapshot(2_001_000).activeMs).toBe(0);
+  });
+
+  it("is a no-op when away or paused", () => {
+    const p = new PresenceMachine(cfg);
+    expect(p.reset(1)).toEqual([]);
+    p.pause(2);
+    expect(p.reset(3)).toEqual([]);
+    expect(p.currentState()).toBe("paused");
+  });
+
+  it("drops a sub-floor sprint silently", () => {
+    const p = new PresenceMachine(cfg);
+    p.tick(0, 0);
+    expect(p.reset(10_000)).toEqual([]);
+    expect(p.currentState()).toBe("away");
+  });
+});

@@ -36,6 +36,12 @@ describe("chooseNudgeSurface", () => {
     expect(chooseNudgeSurface("escalating", -1)).toBe("soft");
     expect(chooseNudgeSurface("escalating", 0.5)).toBe("soft");
   });
+
+  it("never picks the full-screen overlay while a game is running", () => {
+    expect(chooseNudgeSurface("hard", 0, { gaming: true })).toBe("soft");
+    expect(chooseNudgeSurface("escalating", 3, { gaming: true })).toBe("soft");
+    expect(chooseNudgeSurface("hard", 0, { gaming: false })).toBe("hard");
+  });
 });
 
 describe("isNudgeMode", () => {

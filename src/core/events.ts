@@ -19,7 +19,7 @@ export type DomainEvent =
       event: "sprint_ended";
       active_s: number;
       over_s: number;
-      ended_by: "idle_reset" | "paused" | "manual";
+      ended_by: "idle_reset" | "paused" | "manual" | "reset";
     });
 
 /** Sink for persisting domain events. The JSONL impl lands in a later task. */

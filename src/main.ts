@@ -18,10 +18,10 @@ import { listen } from "@tauri-apps/api/event";
 
 import { PresenceMachine } from "./core/presence";
 import type { PresenceConfig, PresenceEvent, PresenceState } from "./core/presence";
-import { ringVisual } from "./core/ring";
+import { nextPulse, ringVisual } from "./core/ring";
 import { toDomainEvents } from "./core/events";
 import type { MapContext } from "./core/events";
-import { chooseNudgeSurface, decideNudge } from "./core/nudge";
+import { chooseNudgeSurface, decideNudge, NUDGE_RESET } from "./core/nudge";
 import { loadConfig } from "./native/config";
 import type { TomatoConfig } from "./native/config";
 import { SETTINGS_SAVED } from "./core/settingsForm";
@@ -29,7 +29,7 @@ import { jsonlEventStore } from "./native/eventStore";
 import { renderRing, staticIconUrl } from "./native/trayIcon";
 import { dndDetector } from "./native/dnd";
 import { notify } from "./native/notify";
-import { idleSeconds } from "./native/presence";
+import { gameRunning, idleSample, idleSeconds } from "./native/presence";
 import type { Theme } from "./core/tokens";
 
 /** Tray icon canvas size (px). Linux panels commonly render around 22–24px. */
@@ -112,6 +112,7 @@ async function main(): Promise<void> {
   let resumeItem: MenuItem | null = null;
   let startItem: MenuItem | null = null;
   let stopItem: MenuItem | null = null;
+  let resetItem: MenuItem | null = null;
 
   // Persist a batch of raw presence events. Mint a fresh sprint id on each
   // sprint-started, then map through the pure mapper and append every domain
@@ -147,7 +148,10 @@ async function main(): Promise<void> {
     // boundary soft and every re-nudge hard.
     if (decideNudge(await dndDetector.current()) !== "notify") return;
     const top = nudges.reduce((a, b) => (b.index > a.index ? b : a));
-    if (chooseNudgeSurface(config.nudge_mode, top.index) === "soft") {
+    // Never pop the full-screen overlay over a game: probe only when it would fire.
+    const wouldBeHard = chooseNudgeSurface(config.nudge_mode, top.index) === "hard";
+    const gaming = wouldBeHard && (await gameRunning());
+    if (chooseNudgeSurface(config.nudge_mode, top.index, { gaming }) === "soft") {
       await notify(
         "Tomato",
         "You've been focused a while — a good moment to step away.",
@@ -169,13 +173,16 @@ async function main(): Promise<void> {
 
   // Draw (or fetch) the icon for the current state and push it to the tray. The
   // ring reflects an ACTIVE sprint; away/paused show the static idle icon.
+  // Overrun pulse phase, flipped on each redraw while the ring is red.
+  let pulseOn = false;
   async function refreshIcon(): Promise<void> {
     const snap = machine.snapshot(Date.now());
     const v = ringVisual(snap.state, snap.activeMs, presenceConfig.sprintMs);
+    pulseOn = nextPulse(v.colorRole, pulseOn);
 
     let image: Image;
     if (snap.state === "active") {
-      const rgba = renderRing(TRAY_SIZE, v.progress, v.colorRole, theme());
+      const rgba = renderRing(TRAY_SIZE, v.progress, v.colorRole, theme(), pulseOn);
       image = await Image.new(rgba, TRAY_SIZE, TRAY_SIZE);
     } else {
       image = await staticIdleIcon();
@@ -199,6 +206,7 @@ async function main(): Promise<void> {
     // Pause is available while tracking (away/active); Resume only while paused.
     if (pauseItem) await pauseItem.setEnabled(s !== "paused").catch(() => {});
     if (resumeItem) await resumeItem.setEnabled(s === "paused").catch(() => {});
+    if (resetItem) await resetItem.setEnabled(s === "active").catch(() => {});
     // Manual Start/Stop only when no presence provider is live: Start needs away,
     // Stop needs an active sprint. When presence is available they stay disabled
     // (presence auto-starts/stops sprints).
@@ -255,6 +263,9 @@ async function main(): Promise<void> {
       }
     })();
   });
+
+  // Overlay "Dismiss & reset" → end the sprint now; apply() closes the overlay.
+  await listen(NUDGE_RESET, () => void apply(machine.reset(Date.now())));
 
   // --- Stats window ----------------------------------------------------------
 
@@ -428,6 +439,13 @@ async function main(): Promise<void> {
     action: () => void apply(machine.resume(Date.now())),
   });
 
+  resetItem = await MenuItem.new({
+    id: "reset",
+    text: "Reset timer",
+    enabled: false,
+    action: () => void apply(machine.reset(Date.now())),
+  });
+
   const items: (MenuItem | PredefinedMenuItem)[] = [];
 
   // Start/Stop always exist (manual mode drives sprints by hand). They're enabled
@@ -448,6 +466,7 @@ async function main(): Promise<void> {
   items.push(startItem, stopItem, await PredefinedMenuItem.new({ item: "Separator" }));
 
   items.push(
+    resetItem,
     pauseItem,
     resumeItem,
     await PredefinedMenuItem.new({ item: "Separator" }),
@@ -501,12 +520,12 @@ async function main(): Promise<void> {
         // Pick up any deferred config once the machine is between sprints, before
         // the next sprint could begin.
         applyPendingConfig();
-        const idle = await idleSeconds();
+        const { idleSeconds: idle, gap } = await idleSample();
         const idleMs = idle === null ? null : Math.round(idle * 1000);
         // Track live availability so syncMenu can reshape the menu/tooltip if a
         // provider flips mid-session. Updated before apply() (which runs syncMenu).
         available = idleMs !== null;
-        await apply(machine.tick(Date.now(), idleMs));
+        await apply(machine.tick(Date.now(), idleMs, gap));
       } catch (err) {
         console.error("tomato tick failed", err);
       } finally {

@@ -1,8 +1,46 @@
 use std::process::Command;
+use std::sync::Mutex;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[cfg(target_os = "linux")]
 mod autostart_heal;
+mod game;
+mod idle_gap;
 mod presence;
+
+use idle_gap::{Gap, GapTracker};
+
+/// Idle stretches seen by the native sampler, shared with `idle_sample`.
+static GAPS: Mutex<Option<GapTracker>> = Mutex::new(None);
+
+fn now_ms() -> f64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0.0, |d| d.as_secs_f64() * 1000.0)
+}
+
+/// Read idle time and feed it to the gap tracker. Returns idle seconds.
+fn sample_idle() -> Option<f64> {
+    let idle = presence::idle_seconds()?;
+    if let Ok(mut g) = GAPS.lock() {
+        g.get_or_insert_with(GapTracker::default).observe(now_ms(), idle * 1000.0);
+    }
+    Some(idle)
+}
+
+/// Sample idle time 4× a second off the webview, so a break that ends between
+/// two (sparse) webview ticks is still seen. See idle_gap.rs.
+fn spawn_idle_sampler() {
+    std::thread::spawn(|| loop {
+        let _ = sample_idle();
+        std::thread::sleep(Duration::from_millis(250));
+    });
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct IdleSample {
+    idle_seconds: Option<f64>,
+    gap: Option<Gap>,
+}
 
 /// Report the desktop Do-Not-Disturb state by reading GNOME's notification
 /// banner setting.
@@ -44,6 +82,21 @@ fn quit(app: tauri::AppHandle) {
 #[tauri::command]
 fn idle_seconds() -> Option<f64> {
     presence::idle_seconds()
+}
+
+/// Current idle seconds plus the longest idle stretch that ended since the last
+/// call (see idle_gap.rs). The webview's tick loop reads this.
+#[tauri::command]
+fn idle_sample() -> IdleSample {
+    let idle_seconds = sample_idle();
+    let gap = GAPS.lock().ok().and_then(|mut g| g.as_mut().and_then(GapTracker::take));
+    IdleSample { idle_seconds, gap }
+}
+
+/// Whether a Steam game is running, so the full-screen nudge never pops over it.
+#[tauri::command]
+fn game_running() -> bool {
+    game::steam_game_running()
 }
 
 /// Re-register autostart when its recorded `Exec=` target has gone missing, so a
@@ -97,9 +150,10 @@ pub fn run() {
             // A stale autostart entry fails silently at login; repair it here.
             #[cfg(target_os = "linux")]
             heal_autostart(app.handle());
+            spawn_idle_sampler();
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![dnd_state, quit, idle_seconds])
+        .invoke_handler(tauri::generate_handler![dnd_state, quit, idle_seconds, idle_sample, game_running])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

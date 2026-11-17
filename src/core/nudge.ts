@@ -39,10 +39,17 @@ export function isNudgeMode(value: unknown): value is NudgeMode {
  *  - "hard"       → always the on-screen overlay, boundary included.
  *  - "escalating" → soft at the boundary (index 0), hard from the first
  *                   re-nudge (index >= 1).
+ * While a game is running (`ctx.gaming`) the overlay never fires: whatever the
+ * mode, the nudge falls back to the quiet notification.
  * Pure and total. The DND gate (decideNudge) is applied separately by the shell
  * and suppresses BOTH surfaces.
  */
-export function chooseNudgeSurface(mode: NudgeMode, maxIndex: number): NudgeSurface {
+export function chooseNudgeSurface(
+  mode: NudgeMode,
+  maxIndex: number,
+  ctx: { gaming: boolean } = { gaming: false },
+): NudgeSurface {
+  if (ctx.gaming) return "soft";
   switch (mode) {
     case "soft":
       return "soft";
@@ -66,3 +73,6 @@ export function dismissLockLabel(remainingMs: number): string {
   if (remainingMs <= 0) return "Dismiss";
   return `Dismiss in ${Math.ceil(remainingMs / 1000)}`;
 }
+
+/** Overlay → main: "dismiss and reset the counter" (end the sprint now). */
+export const NUDGE_RESET = "tomato://nudge-reset";

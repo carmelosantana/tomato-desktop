@@ -118,3 +118,12 @@ export function describeRing(size: number): RingDimensions {
     innerGapPx: RING_GEOMETRY.innerGapPx,
   };
 }
+
+/**
+ * The overrun "pulse": while the ring is red the tray icon alternates between
+ * the plain ring and a ring with a filled center on each redraw, so the icon
+ * catches the eye. Off (plain ring) in every other role.
+ */
+export function nextPulse(role: RingColorRole, prevOn: boolean): boolean {
+  return role === "overrun" ? !prevOn : false;
+}

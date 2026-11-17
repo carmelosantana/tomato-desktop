@@ -40,6 +40,7 @@ export function renderRing(
   progress: number,
   colorRole: RingColorRole,
   theme: Theme,
+  pulse = false,
 ): Uint8Array {
   const dims = describeRing(size);
   const canvas = new OffscreenCanvas(size, size);
@@ -65,6 +66,15 @@ export function renderRing(
     ctx.beginPath();
     ctx.arc(dims.center, dims.center, dims.arcRadius, startRad, startRad + sweep, !dims.clockwise);
     ctx.stroke();
+  }
+
+  // Overrun pulse: fill the center in the role color (see core nextPulse).
+  if (pulse) {
+    ctx.fillStyle = roleColor(theme, colorRole);
+    ctx.beginPath();
+    const r = dims.arcRadius - dims.strokeWidth / 2 - dims.innerGapPx;
+    ctx.arc(dims.center, dims.center, Math.max(0, r), 0, Math.PI * 2);
+    ctx.fill();
   }
 
   const { data } = ctx.getImageData(0, 0, size, size);
