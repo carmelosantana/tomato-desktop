@@ -2,6 +2,7 @@
   "name": "tomato",
   "private": true,
   "version": "0.2.2",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "packageManager": "pnpm@11.15.1",
   "scripts": {

@@ -5,7 +5,7 @@
 unsigned macOS bundles that CI also produces, but locally, without spending
 runner minutes.
 
-**Repo:** `git@github.com:carmelosantana/tomato-desktop.git` (private).
+**Repo:** `git@github.com:carmelosantana/tomato-desktop.git`.
 **What you're building:** the Tomato desktop app (Tauri v2 tray app) — a `.dmg`
 and a `Tomato.app`, plus an optional `.app.tar.gz`, matching CI's macOS output.
 
