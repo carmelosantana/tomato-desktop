@@ -7,6 +7,12 @@ It doesn't make you start or stop a timer, force a break, or lock your screen.
 Built with **Tauri v2**: a TypeScript frontend and a thin Rust shell. Runs on Linux
 and macOS.
 
+![The hard nudge: “Time to step away,” with Dismiss and Dismiss & reset timer](docs/screenshots/overlay.png)
+
+| Stats | Settings |
+|---|---|
+| ![Stats: today's active time, sprints, longest stretch, breaks, nudge adherence and a week of active minutes (sample data)](docs/screenshots/stats.png) | ![Settings: sprint length, reset after idle, re-nudge interval, nudge style and autostart](docs/screenshots/settings.png) |
+
 ## How it works
 
 - **Presence, not timers.** Tomato reads how long it's been since your last
@@ -73,6 +79,7 @@ build the macOS bundles on a local Mac.
 - `src-tauri/` — the Rust shell: idle sampling, game detection, the tray, and
   autostart.
 - `docs/design/` — the brand kit (tokens, tray and app icons, UI icons, mockups).
+- `docs/screenshots/` — real captures of the app (the stats window uses sample data).
 
 ## License
 
