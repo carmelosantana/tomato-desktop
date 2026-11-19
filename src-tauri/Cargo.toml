@@ -1,6 +1,6 @@
 [package]
 name = "tomato"
-version = "0.2.2"
+version = "0.2.3"
 description = "A gentle, presence-aware focus companion for your tray"
 authors = ["Carmelo Santana"]
 license = "GPL-3.0-or-later"
